@@ -70,7 +70,7 @@ bintray {
     publish = true
     setPublications("mavenJava")
     pkg(delegateClosureOf<BintrayExtension.PackageConfig> {
-        repo = "maven"
+        repo = "aru"
         name = project.name
         userOrg = "arudiscord"
         setLicenses("MIT")
