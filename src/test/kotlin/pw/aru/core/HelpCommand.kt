@@ -1,6 +1,6 @@
 package pw.aru.core
 
-import pw.aru.core.categories.Category
+import pw.aru.core.commands.Category
 import pw.aru.core.commands.Command
 import pw.aru.core.commands.ICommand
 import pw.aru.core.commands.context.CommandContext

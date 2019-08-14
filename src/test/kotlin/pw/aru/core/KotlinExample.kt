@@ -63,5 +63,5 @@ object TestBot : BotDef {
 }
 
 fun main() {
-    Bootstrap(TestBot).load()
+    BotApplication(TestBot).init()
 }

@@ -1,10 +1,9 @@
-package pw.aru.core.listeners
+package pw.aru.core.commands.manager
 
 import com.mewna.catnip.entity.message.Message
 import com.mewna.catnip.entity.util.Permission.ADMINISTRATOR
 import com.mewna.catnip.entity.util.Permission.SEND_MESSAGES
 import io.reactivex.functions.Consumer
-import pw.aru.core.commands.manager.CommandProcessor
 import pw.aru.utils.AruTaskExecutor.queue
 
 class CommandListener(private val processor: CommandProcessor) : Consumer<Message> {

@@ -1,26 +1,24 @@
 package pw.aru.core
 
+import com.mewna.catnip.Catnip
 import com.mewna.catnip.entity.user.Presence.Activity
 import com.mewna.catnip.entity.user.Presence.ActivityType.PLAYING
 import com.mewna.catnip.entity.user.Presence.OnlineStatus.ONLINE
 import com.mewna.catnip.entity.user.Presence.of
 import io.github.classgraph.ClassGraph
+import org.kodein.di.direct
 import org.kodein.di.generic.instance
-import pw.aru.core.bootstrap.BootstrapLogger
-import pw.aru.core.bootstrap.CatnipBootstrap
-import pw.aru.core.bootstrap.CommandBootstrap
-import pw.aru.core.bootstrap.KodeinBootstrap
+import pw.aru.core.bootstrap.*
 import pw.aru.core.commands.manager.CommandRegistry
 import pw.aru.utils.AruTaskExecutor.task
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 @Suppress("unused")
-class Bootstrap(private val def: BotDef) {
-    fun load() {
-        Locale.setDefault(Locale("en", "US"))
+class BotApplication(private val def: BotDef) {
+    private lateinit var shutdownManager: ShutdownManager
 
+    fun init() {
         val log = BootstrapLogger(def)
         log.started()
 
@@ -31,13 +29,11 @@ class Bootstrap(private val def: BotDef) {
                 .whitelistPackages("pw.aru", def.basePackage)
                 .scan()
 
-            val catnipBootstrap = CatnipBootstrap(def)
-
-            val catnip = catnipBootstrap.create()
+            val catnip = Catnip.catnip(def.catnipOptions)
 
             val kodein = KodeinBootstrap(def, catnip).create()
 
-            catnipBootstrap.run {
+            CatnipBootstrap(def).run {
                 onFirstShardReady = {
                     val commandBootstrap = CommandBootstrap(scanResult, kodein)
 
@@ -61,9 +57,15 @@ class Bootstrap(private val def: BotDef) {
 
                 configure(catnip, kodein)
             }
+
+            shutdownManager = kodein.direct.instance()
         } catch (e: Exception) {
             log.failed(e)
             exitProcess(1)
         }
+    }
+
+    fun shutdown() {
+        shutdownManager.shutdown()
     }
 }

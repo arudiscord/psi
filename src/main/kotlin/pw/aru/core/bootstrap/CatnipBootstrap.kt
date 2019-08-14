@@ -8,7 +8,7 @@ import mu.KLogging
 import org.kodein.di.Kodein
 import org.kodein.di.generic.instance
 import pw.aru.core.BotDef
-import pw.aru.core.listeners.CommandListener
+import pw.aru.core.commands.manager.CommandListener
 import pw.aru.utils.KodeinExtension
 
 class CatnipBootstrap(private val def: BotDef) {
@@ -16,10 +16,6 @@ class CatnipBootstrap(private val def: BotDef) {
 
     var onFirstShardReady: () -> Unit = {}
     var onAllShardsReady: (Int) -> Unit = {}
-
-    fun create(): Catnip {
-        return Catnip.catnip(def.catnipOptions)
-    }
 
     fun configure(catnip: Catnip, kodein: Kodein) {
         val instance by kodein.instance<CommandListener>()

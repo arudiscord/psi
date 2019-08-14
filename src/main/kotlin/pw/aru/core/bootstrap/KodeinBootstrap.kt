@@ -12,7 +12,7 @@ import pw.aru.core.commands.manager.CommandRegistry
 import pw.aru.core.logging.DiscordLogger
 import pw.aru.libs.kodein.jit.installJit
 
-class KodeinBootstrap(val def: BotDef, val catnip: Catnip) {
+class KodeinBootstrap(private val def: BotDef, private val catnip: Catnip) {
     fun create() = Kodein {
         // Install JIT Module
         installJit()

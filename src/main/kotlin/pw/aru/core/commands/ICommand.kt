@@ -2,7 +2,6 @@ package pw.aru.core.commands
 
 import com.mewna.catnip.entity.message.Embed
 import com.mewna.catnip.entity.message.Message
-import pw.aru.core.categories.Category
 import pw.aru.core.commands.ICommand.CustomHandler.Result
 import pw.aru.core.commands.context.CommandContext
 import pw.aru.core.permissions.Permissions
