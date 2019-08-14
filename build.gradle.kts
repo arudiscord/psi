@@ -1,3 +1,5 @@
+import com.jfrog.bintray.gradle.BintrayExtension
+import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // Aru!DB
@@ -6,6 +8,7 @@ plugins {
     maven
     `maven-publish`
     id("com.github.ben-manes.versions") version "0.21.0"
+    id("com.jfrog.bintray") version "1.8.4"
 }
 
 group = "pw.aru"
@@ -41,6 +44,42 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+val sourceJar = task("sourceJar", Jar::class) {
+    dependsOn(tasks["classes"])
+    classifier = "sources"
+    from(sourceSets["main"].allSource)
+}
+
+publishing {
+    publications.create("mavenJava", MavenPublication::class.java) {
+        groupId = project.group.toString()
+        artifactId = project.name
+        version = project.version.toString()
+
+        from(components["java"])
+        artifact(sourceJar)
+    }
+}
+
+fun findProperty(s: String) = project.findProperty(s) as String?
+bintray {
+    user = findProperty("bintrayUser")
+    key = findProperty("bintrayApiKey")
+    publish = true
+    setPublications("mavenJava")
+    pkg(delegateClosureOf<BintrayExtension.PackageConfig> {
+        repo = "maven"
+        name = project.name
+        userOrg = "arudiscord"
+        setLicenses("MIT")
+        vcsUrl = "https://github.com/arudiscord/andeclient.git"
+    })
+}
+
+tasks.withType<BintrayUploadTask> {
+    dependsOn("build", "publishToMavenLocal")
 }
 
 project.run {
