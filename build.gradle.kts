@@ -65,7 +65,7 @@ publishing {
 
 fun findProperty(s: String) = project.findProperty(s) as String?
 bintray {
-    user = findProperty("bintrayUser")
+    user = findProperty("bintrayUsername")
     key = findProperty("bintrayApiKey")
     publish = true
     setPublications("mavenJava")
