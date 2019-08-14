@@ -1,5 +1,6 @@
 package pw.aru.core.commands.help
 
+import com.mewna.catnip.entity.message.Embed
 import com.mewna.catnip.entity.message.Message
 import pw.aru.core.BotDef
 import pw.aru.core.commands.ICommand
@@ -9,17 +10,16 @@ import pw.aru.utils.extensions.lib.field
 import java.awt.Color
 
 class Help(
-    val def: BotDef,
-    d: BaseDescription,
+    private val d: BaseDescription,
     vararg val nodes: HelpNode
 ) : ICommand.HelpDialog {
-    val names: List<String>?
-    val title: String
-    val color: Color
-    val permissions: Permissions?
-    val thumbnail: String
+    override fun onHelp(def: BotDef, message: Message): Embed = embed {
+        val names: List<String>?
+        val title: String
+        val color: Color
+        val permissions: Permissions?
+        val thumbnail: String
 
-    init {
         when (d) {
             is CommandDescription -> {
                 names = d.names
@@ -36,9 +36,7 @@ class Help(
                 thumbnail = d.thumbnail
             }
         }
-    }
 
-    override fun onHelp(message: Message) = embed {
         color(color)
         thumbnail(thumbnail)
 

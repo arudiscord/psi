@@ -163,12 +163,12 @@ class CommandProcessor(
         when {
             t == ShowHelp -> {
                 if (command is ICommand.HelpDialogProvider) {
-                    message.channel().sendMessage(command.helpHandler.onHelp(message))
+                    message.channel().sendMessage(command.helpHandler.onHelp(def, message))
                     return
                 }
 
                 if (command is ICommand.HelpDialog) {
-                    message.channel().sendMessage(command.onHelp(message))
+                    message.channel().sendMessage(command.onHelp(def, message))
                     return
                 }
 

@@ -2,6 +2,7 @@ package pw.aru.core.commands
 
 import com.mewna.catnip.entity.message.Embed
 import com.mewna.catnip.entity.message.Message
+import pw.aru.core.BotDef
 import pw.aru.core.commands.ICommand.CustomHandler.Result
 import pw.aru.core.commands.context.CommandContext
 import pw.aru.core.permissions.Permissions
@@ -28,7 +29,7 @@ interface ICommand {
     }
 
     interface HelpDialog {
-        fun onHelp(message: Message): Embed
+        fun onHelp(def: BotDef, message: Message): Embed
     }
 
     interface HelpDialogProvider {
