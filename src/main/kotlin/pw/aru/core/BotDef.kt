@@ -14,7 +14,7 @@ interface BotDef {
     val version: String
     val basePackage: String
     val prefixes: List<String>
-    val splashes: Array<String>
+    val splashes: List<String>
 
     val consoleWebhook: String // should be a discord webhook
     val serversWebhook: String // should be a discord webhook
@@ -36,6 +36,8 @@ interface BotDef {
         fun resolvePerms(message: Member): Set<Permission> // return a empty set to blacklist
 
         fun checkBotPermissions(message: Message): Boolean
+
+        fun runChecks(message: Message, command: ICommand, userPerms: Set<Permission>): Boolean
 
         fun beforeCommand(message: Message, command: String)
 

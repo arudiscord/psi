@@ -14,9 +14,8 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 
 class CommandProcessor(
-    private val aru: BotDef,
-    private val registry: CommandRegistry,
-    private val checks: CommandChecks
+    private val def: BotDef,
+    private val registry: CommandRegistry
 ) : KLogging() {
 
     var commandCount = 0
@@ -24,14 +23,14 @@ class CommandProcessor(
     fun onCommand(message: Message) {
         val raw = message.content()
 
-        for (prefix in aru.prefixes) {
+        for (prefix in def.prefixes) {
             if (raw.startsWith(prefix)) {
                 process(message, raw.substring(prefix.length).trimStart())
                 return
             }
         }
 
-        val guildPrefix: String? = aru.commandProcessor.getGuildPrefix(message)
+        val guildPrefix: String? = def.commandProcessor.getGuildPrefix(message)
 
         if (guildPrefix != null && raw.startsWith(guildPrefix)) {
             process(message, raw.substring(guildPrefix.length))
@@ -42,7 +41,7 @@ class CommandProcessor(
         if (raw.startsWith('[') && raw.contains(']')) {
             val (cmdRaw, cmdOuter) = raw.substring(1).trimStart().split(']', limit = 2)
 
-            for (prefix in aru.prefixes) {
+            for (prefix in def.prefixes) {
                 if (cmdRaw.startsWith(prefix)) {
                     processDiscrete(message, cmdRaw.substring(prefix.length).trimStart(), cmdOuter)
                     return
@@ -57,9 +56,9 @@ class CommandProcessor(
     }
 
     private fun process(message: Message, content: String) {
-        if (!aru.commandProcessor.checkBotPermissions(message)) return
+        if (!def.commandProcessor.checkBotPermissions(message)) return
 
-        val userPerms = aru.commandProcessor.resolvePerms(message.member()!!)
+        val userPerms = def.commandProcessor.resolvePerms(message.member()!!)
         if (userPerms.isEmpty()) return // Global Blacklist
 
         val split = content.split(*SPLIT_CHARS, limit = 2)
@@ -68,9 +67,9 @@ class CommandProcessor(
 
         val command = registry[cmd] ?: return processCustomCommand(message, cmd, args, userPerms)
 
-        if (!checks.runChecks(message, command, userPerms)) return
+        if (!def.commandProcessor.runChecks(message, command, userPerms)) return
 
-        aru.commandProcessor.beforeCommand(message, cmd)
+        def.commandProcessor.beforeCommand(message, cmd)
 
         logger.trace {
             "Command invoked: $cmd, by ${message.author().discordTag()} with timestamp ${Date()}"
@@ -88,7 +87,7 @@ class CommandProcessor(
             }
         ) return
 
-        aru.commandProcessor.handleCustomCommands(message, cmd, args, userPerms)
+        def.commandProcessor.handleCustomCommands(message, cmd, args, userPerms)
     }
 
     private fun processDiscreteCustomCommand(
@@ -106,7 +105,7 @@ class CommandProcessor(
             }
         ) return
 
-        aru.commandProcessor.handleDiscreteCustomCommands(message, cmd, args, outer, userPerms)
+        def.commandProcessor.handleDiscreteCustomCommands(message, cmd, args, outer, userPerms)
     }
 
     private fun runCommand(command: ICommand, message: Message, args: String, userPerms: Set<Permission>) {
@@ -118,9 +117,9 @@ class CommandProcessor(
     }
 
     private fun processDiscrete(message: Message, content: String, outer: String) {
-        if (!aru.commandProcessor.checkBotPermissions(message)) return
+        if (!def.commandProcessor.checkBotPermissions(message)) return
 
-        val userPerms = aru.commandProcessor.resolvePerms(message.member()!!)
+        val userPerms = def.commandProcessor.resolvePerms(message.member()!!)
         if (userPerms.isEmpty()) return // Global Blacklist
 
         val split = content.split(' ', limit = 2)
@@ -135,9 +134,9 @@ class CommandProcessor(
             userPerms
         )
 
-        if (!checks.runChecks(message, command, userPerms)) return
+        if (!def.commandProcessor.runChecks(message, command, userPerms)) return
 
-        aru.commandProcessor.beforeCommand(message, cmd)
+        def.commandProcessor.beforeCommand(message, cmd)
 
         runDiscreteCommand(command, message, args, outer, userPerms)
 
@@ -180,12 +179,12 @@ class CommandProcessor(
                 try {
                     command.handle(message, t)
                 } catch (u: Exception) {
-                    aru.commandProcessor.handleExceptions(command, message, t, u)
+                    def.commandProcessor.handleExceptions(command, message, t, u)
                 }
             }
 
             else -> {
-                aru.commandProcessor.handleExceptions(command, message, t, null)
+                def.commandProcessor.handleExceptions(command, message, t, null)
             }
         }
     }

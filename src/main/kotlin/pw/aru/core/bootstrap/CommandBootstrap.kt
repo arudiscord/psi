@@ -52,8 +52,8 @@ class CommandBootstrap(val scanResult: ScanResult, val kodein: Kodein) {
     }
 
     fun createCommands() {
-        scanResult.getClassesImplementing("pw.aru.core.ICommand")
-            .filter { it.hasAnnotation("pw.aru.core.Command") }
+        scanResult.getClassesImplementing("pw.aru.core.commands.ICommand")
+            .filter { it.hasAnnotation("pw.aru.core.commands.Command") }
             .loadClasses(ICommand::class.java)
             .forEach {
                 try {
@@ -68,8 +68,8 @@ class CommandBootstrap(val scanResult: ScanResult, val kodein: Kodein) {
     }
 
     fun createProviders() {
-        scanResult.getClassesImplementing("pw.aru.core.ICommandProvider")
-            .filter { it.hasAnnotation("pw.aru.core.CommandProvider") }
+        scanResult.getClassesImplementing("pw.aru.core.commands.ICommandProvider")
+            .filter { it.hasAnnotation("pw.aru.core.commands.CommandProvider") }
             .loadClasses(ICommandProvider::class.java)
             .forEach {
                 try {
@@ -83,7 +83,7 @@ class CommandBootstrap(val scanResult: ScanResult, val kodein: Kodein) {
     }
 
     fun createStandalones() {
-        scanResult.getClassesImplementing("pw.aru.core.Executable")
+        scanResult.getClassesImplementing("pw.aru.core.executor.Executable")
             .filter {
                 allOf(
                     arrayOf(
