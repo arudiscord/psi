@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru"
-version = "1.1"
+version = "1.2"
 
 //Repositories and Dependencies
 repositories {

@@ -5,7 +5,7 @@ import kotlin.reflect.full.findAnnotation
 class PermissionSerializer {
     private val map = LinkedHashMap<String, Permission>()
 
-    fun add(values: Array<out Permission>) = apply {
+    fun register(values: Array<out Permission>) = apply {
         for (value in values) serialize(value)
     }
 

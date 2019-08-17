@@ -5,6 +5,13 @@ Catnip-based Bot Framework in Kotlin
 
 Licensed under the [Apache 2.0 License](https://github.com/arudiscord/andeclient/blob/master/LICENSE).
 
+### Features
+
+- Simple, declarative bot definition interface
+- Command Framework, with Dynamic Command Instantiation and constructor Dependency Injection
+- Modular Argument Parser
+- Executable Tasks with Dynamic Instantiation and constructor Dependency Injection
+
 ### Okay, so here's the deal.
 
 This is the full framework that Aru! is based off.
