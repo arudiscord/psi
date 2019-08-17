@@ -1,1 +1,1 @@
-rootProject.name = "aruCore"
+rootProject.name = "psi"

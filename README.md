@@ -1,7 +1,7 @@
-# aruCore
+# psi
 Catnip-based Bot Framework in Kotlin
 
-[![Latest Version](https://api.bintray.com/packages/arudiscord/aru/aruCore/images/download.svg)](https://bintray.com/arudiscord/aru/aruCore)
+[![Latest Version](https://api.bintray.com/packages/arudiscord/aru/psi/images/download.svg)](https://bintray.com/arudiscord/aru/psi)
 
 Licensed under the [Apache 2.0 License](https://github.com/arudiscord/andeclient/blob/master/LICENSE).
 

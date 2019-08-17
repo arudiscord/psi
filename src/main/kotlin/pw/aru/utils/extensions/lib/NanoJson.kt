@@ -2,7 +2,7 @@ package pw.aru.utils.extensions.lib
 
 import com.grack.nanojson.JsonArray
 import com.grack.nanojson.JsonObject
-import pw.aru.libs.tellatale.utils.Json
+import pw.aru.utils.Json
 
 fun jsonOf(vararg pairs: Pair<String, *>) = if (pairs.isNotEmpty()) JsonObject(mapOf(*pairs)) else JsonObject()
 

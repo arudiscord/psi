@@ -1,4 +1,4 @@
-package pw.aru.libs.tellatale.utils
+package pw.aru.utils
 
 import com.grack.nanojson.JsonArray
 import com.grack.nanojson.JsonObject

@@ -2,10 +2,12 @@ package pw.aru.utils
 
 import com.sun.management.OperatingSystemMXBean
 import mu.KLogging
-import pw.aru.utils.AruTaskExecutor.task
+import pw.aru.utils.PsiTaskExecutor.task
 import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.math.floor as ktFloor
 
+@Deprecated("Will turn into a separate lib on next release.")
 object AsyncInfoMonitor : KLogging() {
     var availableProcessors = Runtime.getRuntime().availableProcessors()
         private set
@@ -96,5 +98,5 @@ object AsyncInfoMonitor : KLogging() {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun floor(d: Double, factor: Double = 1.0) = Math.floor(d * factor) / factor
+    private inline fun floor(d: Double, factor: Double = 1.0) = ktFloor(d * factor) / factor
 }
