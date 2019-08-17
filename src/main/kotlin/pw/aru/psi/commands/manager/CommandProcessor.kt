@@ -153,7 +153,7 @@ open class CommandProcessor(
 
     // extra stuff
 
-    companion object : KLogging() {
+    private companion object : KLogging() {
         val dummyPermission = object : Permission {
             override val name = "Run Bot"
             override val description = "Override CommandProcessor#resolvePermissions to change this."
@@ -162,21 +162,21 @@ open class CommandProcessor(
 
     // hooks
 
-    protected fun customPrefixes(message: Message): List<String> = emptyList()
+    protected open fun customPrefixes(message: Message): List<String> = emptyList()
 
-    protected fun filterMessages(message: Message): Boolean = true
+    protected open fun filterMessages(message: Message): Boolean = true
 
-    protected fun resolvePermissions(member: Member): Set<Permission> = setOf(dummyPermission)
+    protected open fun resolvePermissions(member: Member): Set<Permission> = setOf(dummyPermission)
 
-    protected fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>) = true
+    protected open fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>) = true
 
-    protected fun beforeCommand(message: Message, command: ICommand) = Unit
+    protected open fun beforeCommand(message: Message, command: ICommand) = Unit
 
-    protected fun customHandleCommands(
+    protected open fun customHandleCommands(
         message: Message, command: String, args: Args, outer: String?, permissions: Set<Permission>
     ) = Unit
 
-    protected fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Exception?) {
+    protected open fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Exception?) {
         underlying?.let(throwable::addSuppressed)
         throwable.printStackTrace()
     }

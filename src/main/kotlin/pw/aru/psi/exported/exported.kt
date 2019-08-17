@@ -10,4 +10,4 @@ package pw.aru.psi.exported
 /**
  * Psi Version
  */
-const val psi_version = "1.2"
+const val psi_version = "1.2.1"
