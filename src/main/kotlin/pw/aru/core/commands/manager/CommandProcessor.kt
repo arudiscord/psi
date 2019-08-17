@@ -1,167 +1,129 @@
 package pw.aru.core.commands.manager
 
+import com.mewna.catnip.entity.guild.Member
 import com.mewna.catnip.entity.message.Message
+import com.mewna.catnip.entity.util.Permission.ADMINISTRATOR
+import com.mewna.catnip.entity.util.Permission.SEND_MESSAGES
+import io.reactivex.functions.Consumer
 import mu.KLogging
 import pw.aru.core.BotDef
 import pw.aru.core.commands.ICommand
-import pw.aru.core.commands.ICommand.ExceptionHandler
+import pw.aru.core.commands.ICommand.CustomHandler.Result.HANDLED
 import pw.aru.core.commands.context.CommandContext
-import pw.aru.core.commands.context.CommandContext.ShowHelp
-import pw.aru.core.parser.Args.Companion.SPLIT_CHARS
+import pw.aru.core.parser.Args
 import pw.aru.core.permissions.Permission
+import pw.aru.utils.AruTaskExecutor.queue
+import pw.aru.utils.extensions.lang.anyOf
+import pw.aru.utils.extensions.lang.limit
 import java.util.*
-import kotlin.collections.component1
-import kotlin.collections.component2
 
-class CommandProcessor(
-    private val def: BotDef,
-    private val registry: CommandRegistry
-) : KLogging() {
+@Suppress("MemberVisibilityCanBePrivate", "UNUSED_PARAMETER")
+open class CommandProcessor(
+    protected val def: BotDef, protected val registry: CommandRegistry
+) : Consumer<Message> {
 
-    var commandCount = 0
+    var count: Long = 0
+        private set
 
-    fun onCommand(message: Message) {
+    override fun accept(message: Message) {
+        val self = message.guild()?.selfMember() ?: return
+
+        if (!anyOf(
+                message.author().bot(),
+                !self.hasPermissions(message.channel().asGuildChannel(), SEND_MESSAGES),
+                !self.hasPermissions(ADMINISTRATOR)
+            )) return
+
+        queue("Cmd:${message.author().discordTag()}:${message.content().limit(32)}") {
+            onMessage(message)
+        }
+    }
+
+    private fun onMessage(message: Message) {
         val raw = message.content()
 
         for (prefix in def.prefixes) {
             if (raw.startsWith(prefix)) {
-                process(message, raw.substring(prefix.length).trimStart())
+                message.nextCommand(raw.substring(prefix.length).trimStart(), null)
                 return
             }
         }
 
-        val guildPrefix: String? = def.commandProcessor.getGuildPrefix(message)
+        val customPrefixes = customPrefixes(message)
 
-        if (guildPrefix != null && raw.startsWith(guildPrefix)) {
-            process(message, raw.substring(guildPrefix.length))
-            return
+        for (prefix in customPrefixes) {
+            if (raw.startsWith(prefix)) {
+                message.nextCommand(raw.substring(prefix.length).trimStart(), null)
+                return
+            }
         }
 
-        // onDiscreteCommand(message)
         if (raw.startsWith('[') && raw.contains(']')) {
             val (cmdRaw, cmdOuter) = raw.substring(1).trimStart().split(']', limit = 2)
 
             for (prefix in def.prefixes) {
                 if (cmdRaw.startsWith(prefix)) {
-                    processDiscrete(message, cmdRaw.substring(prefix.length).trimStart(), cmdOuter)
+                    message.nextCommand(cmdRaw.substring(prefix.length).trimStart(), cmdOuter)
                     return
                 }
             }
 
-            if (guildPrefix != null && cmdRaw.startsWith(guildPrefix)) {
-                processDiscrete(message, cmdRaw.substring(guildPrefix.length), cmdOuter)
-                return
+            for (prefix in customPrefixes) {
+                if (cmdRaw.startsWith(prefix)) {
+                    message.nextCommand(cmdRaw.substring(prefix.length).trimStart(), cmdOuter)
+                    return
+                }
             }
         }
     }
 
-    private fun process(message: Message, content: String) {
-        if (!def.commandProcessor.checkBotPermissions(message)) return
+    private fun Message.nextCommand(rawContent: String, outer: String?) {
+        if (!filterMessages(this)) return
 
-        val userPerms = def.commandProcessor.resolvePerms(message.member()!!)
-        if (userPerms.isEmpty()) return // Global Blacklist
+        val permissions = resolvePermissions(member()!!)
+        if (permissions.isEmpty()) return // blacklisted
 
-        val split = content.split(*SPLIT_CHARS, limit = 2)
-        val cmd = split[0].toLowerCase()
-        val args = split.getOrNull(1)?.trimStart(*SPLIT_CHARS) ?: ""
+        val args = Args(rawContent)
+        val cmd = args.takeString().toLowerCase()
 
-        val command = registry[cmd] ?: return processCustomCommand(message, cmd, args, userPerms)
+        val command = registry[cmd]?.let { if (outer == null) it else it as? ICommand.Discrete }
+        val ctx = CommandContext(this, args, permissions)
 
-        if (!def.commandProcessor.runChecks(message, command, userPerms)) return
-
-        def.commandProcessor.beforeCommand(message, cmd)
-
-        logger.trace {
-            "Command invoked: $cmd, by ${message.author().discordTag()} with timestamp ${Date()}"
-        }
-
-        runCommand(command, message, args, userPerms)
-    }
-
-    private fun processCustomCommand(message: Message, cmd: String, args: String, userPerms: Set<Permission>) {
-        val ctx = CommandContext(message, args, userPerms)
-
-        if (
-            registry.lookup.keys.mapNotNull { it as? ICommand.CustomHandler }.any {
-                it.runCatching { ctx.customCall(cmd) }.getOrNull() == ICommand.CustomHandler.Result.HANDLED
+        if (command != null) {
+            if (!filterCommands(this, command, permissions)) return
+            beforeCommand(this, command)
+            logger.trace { "Executing: $cmd by ${author().discordTag()} at ${Date()}" }
+            count++
+            if (outer == null) {
+                command.runCatching { ctx.call() }
+                    .onFailure { runCatching { onCommandError(command, this, it) } }
+            } else {
+                (command as ICommand.Discrete).runCatching { ctx.discreteCall(outer) }
+                    .onFailure { runCatching { onCommandError(command, this, it) } }
             }
-        ) return
-
-        def.commandProcessor.handleCustomCommands(message, cmd, args, userPerms)
-    }
-
-    private fun processDiscreteCustomCommand(
-        message: Message,
-        cmd: String,
-        args: String,
-        outer: String,
-        userPerms: Set<Permission>
-    ) {
-        val ctx = CommandContext(message, args, userPerms)
-
-        if (
-            registry.lookup.keys.mapNotNull { it as? ICommand.CustomDiscreteHandler }.any {
-                it.runCatching { ctx.customCall(cmd, outer) }.getOrNull() == ICommand.CustomHandler.Result.HANDLED
+        } else {
+            if (outer == null) {
+                if (
+                    registry.lookup.keys.mapNotNull { it as? ICommand.CustomHandler }.any {
+                        it.runCatching { ctx.customCall(cmd) }.getOrNull() == HANDLED
+                    }
+                ) return
+            } else {
+                if (
+                    registry.lookup.keys.mapNotNull { it as? ICommand.CustomDiscreteHandler }.any {
+                        it.runCatching { ctx.customCall(cmd, outer) }.getOrNull() == HANDLED
+                    }
+                ) return
             }
-        ) return
 
-        def.commandProcessor.handleDiscreteCustomCommands(message, cmd, args, outer, userPerms)
-    }
-
-    private fun runCommand(command: ICommand, message: Message, args: String, userPerms: Set<Permission>) {
-        commandCount++
-
-        command.runCatching {
-            CommandContext(message, args, userPerms).call()
-        }.onFailure { runCatching { handleException(command, message, it) } }
-    }
-
-    private fun processDiscrete(message: Message, content: String, outer: String) {
-        if (!def.commandProcessor.checkBotPermissions(message)) return
-
-        val userPerms = def.commandProcessor.resolvePerms(message.member()!!)
-        if (userPerms.isEmpty()) return // Global Blacklist
-
-        val split = content.split(' ', limit = 2)
-        val cmd = split[0].toLowerCase()
-        val args = split.getOrNull(1) ?: ""
-
-        val command = registry[cmd] as? ICommand.Discrete ?: return processDiscreteCustomCommand(
-            message,
-            cmd,
-            args,
-            outer,
-            userPerms
-        )
-
-        if (!def.commandProcessor.runChecks(message, command, userPerms)) return
-
-        def.commandProcessor.beforeCommand(message, cmd)
-
-        runDiscreteCommand(command, message, args, outer, userPerms)
-
-        logger.trace {
-            "Discrete Command invoked: $cmd, by ${message.author().discordTag()} with timestamp ${Date()}"
+            customHandleCommands(this, cmd, args, outer, permissions)
         }
     }
 
-    private fun runDiscreteCommand(
-        command: ICommand.Discrete,
-        message: Message,
-        args: String,
-        outer: String,
-        userPerms: Set<Permission>
-    ) {
-        commandCount++
 
-        command.runCatching {
-            CommandContext(message, args, userPerms).discreteCall(outer)
-        }.onFailure { runCatching { handleException(command, message, it) } }
-    }
-
-    private fun handleException(command: ICommand, message: Message, t: Throwable) {
+    private fun onCommandError(command: ICommand, message: Message, t: Throwable) {
         when {
-            t == ShowHelp -> {
+            t == CommandContext.ShowHelp -> {
                 if (command is ICommand.HelpDialogProvider) {
                     message.channel().sendMessage(command.helpHandler.onHelp(def, message))
                     return
@@ -172,20 +134,50 @@ class CommandProcessor(
                     return
                 }
 
-                throw ShowHelp
+                handleException(command, message, t, null)
             }
 
-            command is ExceptionHandler -> {
+            command is ICommand.ExceptionHandler -> {
                 try {
                     command.handle(message, t)
                 } catch (u: Exception) {
-                    def.commandProcessor.handleExceptions(command, message, t, u)
+                    handleException(command, message, t, u)
                 }
             }
 
             else -> {
-                def.commandProcessor.handleExceptions(command, message, t, null)
+                handleException(command, message, t, null)
             }
         }
+    }
+
+    // extra stuff
+
+    companion object : KLogging() {
+        val dummyPermission = object : Permission {
+            override val name = "Run Bot"
+            override val description = "Override CommandProcessor#resolvePermissions to change this."
+        }
+    }
+
+    // hooks
+
+    protected fun customPrefixes(message: Message): List<String> = emptyList()
+
+    protected fun filterMessages(message: Message): Boolean = true
+
+    protected fun resolvePermissions(member: Member): Set<Permission> = setOf(dummyPermission)
+
+    protected fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>) = true
+
+    protected fun beforeCommand(message: Message, command: ICommand) = Unit
+
+    protected fun customHandleCommands(
+        message: Message, command: String, args: Args, outer: String?, permissions: Set<Permission>
+    ) = Unit
+
+    protected fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Exception?) {
+        underlying?.let(throwable::addSuppressed)
+        throwable.printStackTrace()
     }
 }

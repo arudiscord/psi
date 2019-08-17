@@ -4,27 +4,29 @@ import com.mewna.catnip.Catnip
 import com.mewna.catnip.shard.DiscordEvent
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
-import mu.KLogging
 import org.kodein.di.Kodein
+import org.kodein.di.direct
 import org.kodein.di.generic.instance
 import pw.aru.core.BotDef
-import pw.aru.core.commands.manager.CommandListener
+import pw.aru.core.commands.manager.CommandProcessor
 import pw.aru.utils.KodeinExtension
 
-class CatnipBootstrap(private val def: BotDef) {
-    companion object : KLogging()
-
+class CatnipBootstrap(private val def: BotDef, private val kodein: Kodein) {
     var onFirstShardReady: () -> Unit = {}
     var onAllShardsReady: (Int) -> Unit = {}
 
-    fun configure(catnip: Catnip, kodein: Kodein) {
-        val instance by kodein.instance<CommandListener>()
-        val disposableRefs = ArrayList<Disposable>()
+    private val disposableRefs = ArrayList<Disposable>()
 
+    init {
+        val shutdownManager: ShutdownManager by kodein.instance()
+        shutdownManager += { disposableRefs.forEach(Disposable::dispose) }
+    }
+
+    fun configure(catnip: Catnip) {
         catnip.loadExtension(KodeinExtension(kodein))
 
         disposableRefs += catnip.observable(DiscordEvent.MESSAGE_CREATE)
-            .subscribe(instance, def.bootstrap.errorHandler())
+            .subscribe(kodein.direct.instance<CommandProcessor>(), def.bootstrap.errorHandler())
 
         val shardCount by lazy { catnip.gatewayInfo()!!.shards() }
         var ready = 0
@@ -52,9 +54,6 @@ class CatnipBootstrap(private val def: BotDef) {
             onNext = guildLogger::onGuildLeave,
             onError = def.bootstrap.errorHandler()::accept
         )
-
-        val shutdownManager: ShutdownManager by kodein.instance()
-        shutdownManager += { disposableRefs.forEach(Disposable::dispose) }
 
         catnip.connect()
     }

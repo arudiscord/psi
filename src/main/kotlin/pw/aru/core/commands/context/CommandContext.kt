@@ -17,7 +17,7 @@ private typealias CatnipPermission = com.mewna.catnip.entity.util.Permission
 
 data class CommandContext(
     val message: Message,
-    val args: String,
+    val args: Args,
     val permissions: Set<AruPermission>
 ) {
     val catnip: Catnip
@@ -33,7 +33,8 @@ data class CommandContext(
 
     val self by lazy { ContextMember(catnip.selfUser()!!, guild.selfMember()) }
 
-    fun parseable() = Args(args)
+    @Deprecated("Use CommandContext#args directly.", replaceWith = ReplaceWith("args"))
+    fun parseable() = args
 
     fun showHelp(): Unit = throw ShowHelp
 

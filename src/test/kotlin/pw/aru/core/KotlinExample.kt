@@ -1,12 +1,8 @@
 package pw.aru.core
 
 import com.mewna.catnip.CatnipOptions
-import com.mewna.catnip.entity.guild.Member
-import com.mewna.catnip.entity.message.Message
 import io.reactivex.functions.Consumer
 import org.kodein.di.Kodein
-import pw.aru.core.commands.ICommand
-import pw.aru.core.permissions.Permission
 import pw.aru.utils.Colors
 import java.awt.Color
 
@@ -34,32 +30,6 @@ object TestBot : BotDef {
     override val catnipOptions: CatnipOptions = CatnipOptions(System.getenv("token"))
 
     override val kodeinModule: Kodein.Module? = null
-
-    override val commandProcessor: BotDef.ProcessorCallbacks = object : BotDef.ProcessorCallbacks {
-        override fun getGuildPrefix(message: Message): String? = null
-
-        override fun resolvePerms(message: Member): Set<Permission> = setOf(dummyPermission)
-
-        override fun checkBotPermissions(message: Message): Boolean = true
-
-        override fun runChecks(message: Message, command: ICommand, userPerms: Set<Permission>): Boolean = true
-
-        override fun beforeCommand(message: Message, command: String) = Unit
-
-        override fun handleExceptions(command: ICommand, message: Message, throwable: Throwable, underlying: Throwable?) {
-            underlying?.let(throwable::addSuppressed)
-            throwable.printStackTrace()
-        }
-
-        override fun handleCustomCommands(message: Message, cmd: String, args: String, userPerms: Set<Permission>) = Unit
-
-        override fun handleDiscreteCustomCommands(message: Message, cmd: String, args: String, outer: String, userPerms: Set<Permission>) = Unit
-    }
-
-    private val dummyPermission = object : Permission {
-        override val name: String = "Use Bot"
-        override val description: String = "<3"
-    }
 }
 
 fun main() {

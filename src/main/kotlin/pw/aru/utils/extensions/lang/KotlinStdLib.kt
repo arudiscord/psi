@@ -66,9 +66,11 @@ inline fun <K, V> Map<K, V>.ifContains(k: K, function: (V) -> Unit) {
     if (containsKey(k)) function(get(k)!!)
 }
 
-inline fun anyOf(vararg cases: Boolean) = cases.find { it } ?: false
+inline fun anyOf(vararg cases: Boolean) = cases.any { it }
 
 inline fun allOf(vararg cases: Boolean) = cases.all { it }
+
+inline fun noneOf(vararg cases: Boolean) = cases.none { it }
 
 inline fun multiline(vararg lines: String) = lines.joinToString("\n")
 

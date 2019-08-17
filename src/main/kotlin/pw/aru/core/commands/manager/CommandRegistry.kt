@@ -52,8 +52,6 @@ class CommandRegistry {
     private fun sanityChecks(command: ICommand, names: List<String>): Boolean {
         if (names.isEmpty()) {
             listener.unnamedCommand(command)
-            //logger.error { "Command \"${command.javaClass.name}\" doesn't has any defined names." }
-
             return false
         }
 
@@ -61,10 +59,8 @@ class CommandRegistry {
 
         if (implemented.isEmpty()) {
             listener.noHelpCommand(command, names)
-            //logger.warn { "Command \"${command.javaClass.name}\" doesn't implement a help interface." }
         } else if (implemented.size > 1) {
             listener.multipleHelpCommand(command, names)
-            //logger.warn { "Command \"${command.javaClass.name}\" implements multiple interfaces: ${implemented.joinToString { it.name }}. Implementation ${implemented.first().name} will be used" }
         }
 
         return true

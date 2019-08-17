@@ -33,7 +33,7 @@ class BotApplication(private val def: BotDef) {
 
             val kodein = KodeinBootstrap(def, catnip).create()
 
-            CatnipBootstrap(def).run {
+            CatnipBootstrap(def, kodein).run {
                 onFirstShardReady = {
                     val commandBootstrap = CommandBootstrap(scanResult, kodein)
 
@@ -55,7 +55,7 @@ class BotApplication(private val def: BotDef) {
                     log.successful(it, registry.commands.size)
                 }
 
-                configure(catnip, kodein)
+                configure(catnip)
             }
 
             shutdownManager = kodein.direct.instance()
