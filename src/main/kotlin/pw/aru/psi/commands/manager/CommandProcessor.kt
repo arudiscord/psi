@@ -91,7 +91,7 @@ open class CommandProcessor(
 
         if (command != null) {
             if (!filterCommands(this, command, permissions)) return
-            beforeCommand(this, command)
+            beforeCommand(this, cmd, command, permissions)
             logger.trace { "Executing: $cmd by ${author().discordTag()} at ${Date()}" }
             count++
             if (outer == null) {
@@ -170,7 +170,7 @@ open class CommandProcessor(
 
     protected open fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>) = true
 
-    protected open fun beforeCommand(message: Message, command: ICommand) = Unit
+    protected open fun beforeCommand(message: Message, cmd: String, command: ICommand, permissions: Set<Permission>) = Unit
 
     protected open fun customHandleCommands(
         message: Message, command: String, args: Args, outer: String?, permissions: Set<Permission>
