@@ -4,6 +4,7 @@ import io.github.classgraph.ScanResult
 import mu.KLogging
 import org.kodein.di.Kodein
 import org.kodein.di.generic.instance
+import org.kodein.di.generic.instanceOrNull
 import pw.aru.libs.kodein.jit.jitInstance
 import pw.aru.psi.commands.Command
 import pw.aru.psi.commands.ICommand
@@ -52,8 +53,8 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
     }
 
     fun createCommands() {
-        scanResult.getClassesImplementing("pw.aru.psi.ICommand")
-            .filter { it.hasAnnotation("pw.aru.psi.Command") }
+        scanResult.getClassesImplementing("pw.aru.psi.commands.ICommand")
+            .filter { it.hasAnnotation("pw.aru.psi.commands.Command") }
             .loadClasses(ICommand::class.java)
             .forEach {
                 try {
@@ -68,8 +69,8 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
     }
 
     fun createProviders() {
-        scanResult.getClassesImplementing("pw.aru.psi.ICommandProvider")
-            .filter { it.hasAnnotation("pw.aru.psi.CommandProvider") }
+        scanResult.getClassesImplementing("pw.aru.psi.commands.ICommandProvider")
+            .filter { it.hasAnnotation("pw.aru.psi.commands.CommandProvider") }
             .loadClasses(ICommandProvider::class.java)
             .forEach {
                 try {
@@ -83,16 +84,16 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
     }
 
     fun createStandalones() {
-        scanResult.getClassesImplementing("pw.aru.psi.Executable")
+        scanResult.getClassesImplementing("pw.aru.psi.executor.Executable")
             .filter {
                 allOf(
                     arrayOf(
-                        "pw.aru.core.RunAtStartup",
-                        "pw.aru.core.RunEvery"
+                        "pw.aru.psi.executor.RunAtStartup",
+                        "pw.aru.psi.executor.RunEvery"
                     ).any(it::hasAnnotation),
                     arrayOf(
-                        "pw.aru.core.ICommand",
-                        "pw.aru.core.ICommandProvider"
+                        "pw.aru.psi.commands.ICommand",
+                        "pw.aru.psi.commands.ICommandProvider"
                     ).none(it::implementsInterface)
                 )
             }
@@ -108,8 +109,8 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
 
     fun reportResults() {
         if (!listener.clean) {
-            val log: DiscordLogger by kodein.instance()
-            log.embed {
+            val log: DiscordLogger? by kodein.instanceOrNull()
+            log?.embed {
                 author("Command Registry Report")
                 color(Colors.discordYellow)
 
