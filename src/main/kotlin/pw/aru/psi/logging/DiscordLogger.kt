@@ -1,62 +1,26 @@
 package pw.aru.psi.logging
 
-import com.grack.nanojson.JsonWriter
+import com.mewna.catnip.Catnip
+import com.mewna.catnip.CatnipOptions
 import com.mewna.catnip.entity.builder.EmbedBuilder
-import com.mewna.catnip.entity.impl.EntityBuilder
-import pw.aru.utils.extensions.lang.sendAsync
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpResponse.BodyHandlers.discarding
-import java.util.concurrent.CompletableFuture
-import java.net.http.HttpRequest.BodyPublishers.ofString as stringBody
+import com.mewna.catnip.entity.message.MessageOptions
 
-open class DiscordLogger(val url: String) {
+open class DiscordLogger(url: String) {
     companion object {
-        private val client = HttpClient.newHttpClient()
-        private val dummyBuilder = EntityBuilder(null)
+        private val client = Catnip.catnip(CatnipOptions("").validateToken(false))
     }
 
-    var last: CompletableFuture<*> = CompletableFuture.completedFuture<Void>(null)
+    val webhook = client.parseWebhook(url).blockingGet()
 
-    fun embed(builder: EmbedBuilder.() -> Unit) = apply {
-        last = last.thenCompose {
-            client.sendAsync(discarding()) {
-                uri(URI.create(url))
-                header("Content-Type", "application/json")
-                POST(
-                    // @formatter:off
-                    stringBody(
-                        JsonWriter.string()
-                            .`object`()
-                                .array("embeds")
-                                    .value(dummyBuilder.embedToJson(EmbedBuilder().also(builder).build()))
-                                .end()
-                            .end()
-                        .done()
-                    )
-                    // @formatter:on
-                )
-            }
-        }
+    fun embed(builder: EmbedBuilder.() -> Unit) {
+        webhook.executeWebhook(EmbedBuilder().also(builder).build()).blockingGet()
     }
 
-    fun text(vararg value: String) = apply {
-        last = last.thenCompose {
-            client.sendAsync(discarding()) {
-                uri(URI.create(url))
-                header("Content-Type", "application/json")
-                POST(
-                    // @formatter:off
-                    stringBody(
-                        JsonWriter.string()
-                            .`object`()
-                                .value("content", value.joinToString("\n"))
-                            .end()
-                        .done()
-                    )
-                    // @formatter:on
-                )
-            }
-        }
+    fun text(vararg value: String) {
+        webhook.executeWebhook(value.joinToString("\n")).blockingGet()
+    }
+
+    fun message(builder: MessageOptions.() -> Unit) {
+        webhook.executeWebhook(MessageOptions().also(builder)).blockingGet()
     }
 }

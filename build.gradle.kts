@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "1.2.2"
+version = "1.3"
 
 //Repositories and Dependencies
 repositories {
@@ -27,7 +27,7 @@ repositories {
 dependencies {
     compile(kotlin("stdlib-jdk8"))
 
-    compile("com.mewna:catnip:213e5ea46a")
+    compile("com.mewna:catnip:f3aed18a24")
     compile("io.reactivex.rxjava2:rxkotlin:2.3.0")
     compile("io.github.classgraph:classgraph:4.8.43")
     compile("org.kodein.di:kodein-di-generic-jvm:6.1.0")

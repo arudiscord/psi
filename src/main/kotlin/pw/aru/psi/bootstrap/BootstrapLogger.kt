@@ -7,20 +7,25 @@ import pw.aru.psi.exported.psi_version
 import pw.aru.psi.logging.DiscordLogger
 import pw.aru.utils.Colors
 import pw.aru.utils.extensions.lang.limit
+import pw.aru.utils.extensions.lang.simpleName
 import pw.aru.utils.extensions.lib.description
 import pw.aru.utils.extensions.lib.field
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.time.OffsetDateTime
 
-class BootstrapLogger(private val def: BotDef) : DiscordLogger(def.consoleWebhook) {
+class BootstrapLogger(private val def: BotDef) {
     private companion object : KLogging()
 
+    private val log = def.consoleWebhook?.let { DiscordLogger(it) }
+
     init {
-        text("——————————")
+        log?.text("——————————")
     }
 
     fun started() {
         logger.info("Booting up...")
-        embed {
+        log?.embed {
             author("${def.botName} - Booting up...")
             color(Colors.discordYellow)
 
@@ -35,7 +40,7 @@ class BootstrapLogger(private val def: BotDef) : DiscordLogger(def.consoleWebhoo
 
     fun successful(shardCount: Int, commandCount: Int) {
         logger.info { "Successful boot! $commandCount commands loaded." }
-        embed {
+        log?.embed {
             author("${def.botName} - Successful boot")
             color(Colors.discordGreen)
 
@@ -50,17 +55,23 @@ class BootstrapLogger(private val def: BotDef) : DiscordLogger(def.consoleWebhoo
 
     fun failed(e: Exception) {
         logger.info("Boot failed.", e)
-        embed {
+        log?.embed {
+
             author("${def.botName} - Boot failed")
             color(Colors.discordRed)
 
             field(
                 e.javaClass.name,
-                e.message!!.limit(1024)
+                e.message?.limit(1024) ?: "<No message>"
             )
-            field("More Info:", def.bootstrap.handleError(e))
+            field("More Info:", "See file below.")
 
             timestamp(OffsetDateTime.now())
+        }
+        log?.message {
+            val s = StringWriter().also { e.printStackTrace(PrintWriter(it, true)) }.toString()
+            val fileName = e.simpleName() + "_stacktrace.txt"
+            addFile(fileName, s.toByteArray())
         }
     }
 

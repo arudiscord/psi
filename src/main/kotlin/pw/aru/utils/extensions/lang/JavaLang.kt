@@ -19,7 +19,7 @@ fun Throwable.simpleName(): String {
 
     while (c != null) {
         val name = c.simpleName
-        if (!name.isEmpty()) return name
+        if (name.isNotEmpty()) return name
         c = c.superclass
     }
 
@@ -31,7 +31,7 @@ fun Throwable.especializationName(): String {
 
     while (c != null) {
         val name = c.simpleName
-        if (!name.isEmpty()) {
+        if (name.isNotEmpty()) {
             return when {
                 name.endsWith("Exception") -> name.substring(0, name.length - 9)
                 name.endsWith("Error") -> name.substring(0, name.length - 5)

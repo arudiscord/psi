@@ -3,6 +3,7 @@ package pw.aru.psi.bootstrap
 import com.mewna.catnip.Catnip
 import com.mewna.catnip.shard.DiscordEvent
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Consumer
 import io.reactivex.rxkotlin.subscribeBy
 import org.kodein.di.Kodein
 import org.kodein.di.direct
@@ -25,35 +26,42 @@ class CatnipBootstrap(private val def: BotDef, private val kodein: Kodein) {
     fun configure(catnip: Catnip) {
         catnip.loadExtension(KodeinExtension(kodein))
 
+        val errorHandler: CatnipErrorHandler by kodein.instance()
+
         disposableRefs += catnip.observable(DiscordEvent.MESSAGE_CREATE)
-            .subscribe(kodein.direct.instance<CommandProcessor>(), def.bootstrap.errorHandler())
+            .subscribe(kodein.direct.instance<CommandProcessor>(), Consumer(errorHandler.onCommandProcessor()))
 
         val shardCount by lazy { catnip.gatewayInfo()!!.shards() }
         var ready = 0
 
-        disposableRefs += catnip.observable(DiscordEvent.READY).subscribe {
-            if (ready == 0) {
-                //queue("onFirstShardReady", onFirstShardReady)
-                onFirstShardReady()
-            }
+        disposableRefs += catnip.observable(DiscordEvent.READY).subscribeBy(
+            onNext = {
+                if (ready == 0) {
+                    //queue("onFirstShardReady", onFirstShardReady)
+                    onFirstShardReady()
+                }
 
-            if (++ready == shardCount) {
-                //queue("onAllShardsReady") { onAllShardsReady(shardCount) }
-                onAllShardsReady(shardCount)
-            }
+                if (++ready == shardCount) {
+                    //queue("onAllShardsReady") { onAllShardsReady(shardCount) }
+                    onAllShardsReady(shardCount)
+                }
+            },
+            onError = errorHandler.onReady()
+        )
+
+        def.serversWebhook?.let {
+            val guildLogger = GuildLogger(it)
+
+            disposableRefs += catnip.observable(DiscordEvent.GUILD_CREATE).subscribeBy(
+                onNext = guildLogger::onGuildJoin,
+                onError = errorHandler.onGuildSubscriptions()
+            )
+
+            disposableRefs += catnip.observable(DiscordEvent.GUILD_DELETE).subscribeBy(
+                onNext = guildLogger::onGuildLeave,
+                onError = errorHandler.onGuildSubscriptions()
+            )
         }
-
-        val guildLogger = GuildLogger(def.serversWebhook)
-
-        disposableRefs += catnip.observable(DiscordEvent.GUILD_CREATE).subscribeBy(
-            onNext = guildLogger::onGuildJoin,
-            onError = def.bootstrap.errorHandler()::accept
-        )
-
-        disposableRefs += catnip.observable(DiscordEvent.GUILD_DELETE).subscribeBy(
-            onNext = guildLogger::onGuildLeave,
-            onError = def.bootstrap.errorHandler()::accept
-        )
 
         catnip.connect()
     }

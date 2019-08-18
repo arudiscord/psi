@@ -16,23 +16,20 @@ import pw.aru.utils.PsiTaskExecutor
 
 class KodeinBootstrap(private val def: BotDef, private val catnip: Catnip) {
     fun create() = Kodein {
-        // Install JIT Module
         installJit()
-
-        // Self-references
         bind<Kodein>() with singleton { kodein }
         bind<DKodein>() with singleton { dkodein }
 
-        // Instances
         bind<BotDef>() with instance(def)
+        bind<Catnip>() with instance(catnip)
+
         bind<CommandRegistry>() with singleton { CommandRegistry() }
         bind<CommandProcessor>() with singleton { CommandProcessor(instance(), instance()) }
-        bind<Catnip>() with instance(catnip)
-        bind<TaskExecutorService>() with singleton { PsiTaskExecutor }
-
-        bind<DiscordLogger>() with singleton { DiscordLogger(def.consoleWebhook) }
         bind<ShutdownManager>() with singleton { ShutdownManager() }
 
+        bind<TaskExecutorService>() with singleton { PsiTaskExecutor }
+        bind<CatnipErrorHandler>() with singleton { SLF4JErrorHandler() }
+        def.consoleWebhook?.let { bind<DiscordLogger>() with singleton { DiscordLogger(it) } }
         def.kodeinModule?.let { import(it, true) }
     }
 }
