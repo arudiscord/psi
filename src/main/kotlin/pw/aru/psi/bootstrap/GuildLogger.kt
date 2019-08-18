@@ -2,15 +2,16 @@ package pw.aru.psi.bootstrap
 
 import com.mewna.catnip.entity.channel.GuildChannel
 import com.mewna.catnip.entity.guild.Guild
+import pw.aru.psi.BotDef
 import pw.aru.psi.logging.DiscordLogger
 import pw.aru.utils.Colors
 import pw.aru.utils.extensions.lang.multiline
 import pw.aru.utils.extensions.lang.plusAssign
 
-class GuildLogger(url: String) : DiscordLogger(url) {
+class GuildLogger(private val def: BotDef, url: String) : DiscordLogger(url) {
     fun onGuildJoin(guild: Guild) {
         embed {
-            author("AruLog | New Server")
+            author("${def.botName} | New Server")
             color(Colors.discordGreen)
             thumbnail(guild.iconUrl())
 
@@ -42,7 +43,7 @@ class GuildLogger(url: String) : DiscordLogger(url) {
 
     fun onGuildLeave(guild: Guild) {
         embed {
-            author("AruLog | Lost Server")
+            author("${def.botName} | Lost Server")
             color(Colors.discordRed)
             thumbnail(guild.iconUrl())
 

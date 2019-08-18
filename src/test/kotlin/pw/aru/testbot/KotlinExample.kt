@@ -2,8 +2,8 @@ package pw.aru.testbot
 
 import com.mewna.catnip.CatnipOptions
 import org.kodein.di.Kodein
-import pw.aru.psi.BotApplication
 import pw.aru.psi.BotDef
+import pw.aru.psi.PsiApplication
 import pw.aru.utils.Colors
 
 object TestBot : BotDef {
@@ -21,5 +21,5 @@ object TestBot : BotDef {
 }
 
 fun main() {
-    BotApplication(TestBot).init()
+    PsiApplication(TestBot).init()
 }

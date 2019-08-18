@@ -3,7 +3,7 @@ package pw.aru.psi.bootstrap
 import org.slf4j.LoggerFactory
 
 class SLF4JErrorHandler : CatnipErrorHandler {
-    val logger = LoggerFactory.getLogger(CatnipBootstrap::class.java)
+    val logger = LoggerFactory.getLogger(CatnipErrorHandler::class.java)
 
     override fun onReady(): (Throwable) -> Unit = {
         logger.error("An error happened while setting up Catnip", it)

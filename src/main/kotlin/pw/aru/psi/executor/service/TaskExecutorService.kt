@@ -1,4 +1,4 @@
-package pw.aru.psi.executor
+package pw.aru.psi.executor.service
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledFuture

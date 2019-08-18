@@ -1,7 +1,6 @@
 package pw.aru.psi.bootstrap
 
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.system.exitProcess
 
 class ShutdownManager {
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
@@ -12,6 +11,5 @@ class ShutdownManager {
 
     fun shutdown() {
         listeners.forEach { runCatching(it) }
-        exitProcess(0)
     }
 }
