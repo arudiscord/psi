@@ -176,8 +176,8 @@ open class CommandProcessor(
         message: Message, command: String, args: Args, outer: String?, permissions: Set<Permission>
     ) = Unit
 
-    protected open fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Exception?) {
+    protected open fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Throwable?) {
         underlying?.let(throwable::addSuppressed)
-        throwable.printStackTrace()
+        logger.error(throwable) { "Error while executing $command" }
     }
 }
