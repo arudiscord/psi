@@ -7,19 +7,28 @@ import com.mewna.catnip.entity.guild.Guild
 import com.mewna.catnip.entity.message.Embed
 import com.mewna.catnip.entity.message.Message
 import com.mewna.catnip.entity.message.MessageOptions
+import org.kodein.di.Kodein
+import org.kodein.di.KodeinAware
+import org.kodein.di.direct
+import org.kodein.di.generic.instance
 import org.slf4j.MDC
+import pw.aru.psi.BotDef
 import pw.aru.psi.parser.Args
 import pw.aru.psi.permissions.Permission
 import pw.aru.utils.extensions.lib.embed
 import pw.aru.utils.extensions.lib.message
+import pw.aru.utils.kodein
 
 data class CommandContext(
     val message: Message,
     val args: Args,
     val permissions: Set<Permission>
-) {
-    val catnip: Catnip
-        get() = message.catnip()
+) : KodeinAware {
+    val catnip: Catnip by lazy { message.catnip() }
+
+    override val kodein: Kodein by lazy { catnip.kodein().kodein }
+
+    val def by lazy { direct.instance<BotDef>() }
 
     val author by lazy { ContextMember(message.author(), message.member()!!) }
 
@@ -31,7 +40,11 @@ data class CommandContext(
 
     val self by lazy { ContextMember(catnip.selfUser()!!, guild.selfMember()) }
 
-    @Deprecated("Use CommandContext#args directly.", replaceWith = ReplaceWith("args"))
+    @Deprecated(
+        message = "Use CommandContext#args directly.",
+        replaceWith = ReplaceWith("args"),
+        level = DeprecationLevel.ERROR
+    )
     fun parseable() = args
 
     fun showHelp(): Unit = throw ShowHelp
