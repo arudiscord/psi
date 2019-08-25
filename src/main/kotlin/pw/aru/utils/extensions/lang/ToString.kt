@@ -1,5 +1,5 @@
 @file:Suppress("NOTHING_TO_INLINE")
-@file:JvmName("Extensions")
+@file:JvmName("LangExt")
 @file:JvmMultifileClass
 
 package pw.aru.utils.extensions.lang

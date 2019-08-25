@@ -1,18 +1,11 @@
 @file:Suppress("NOTHING_TO_INLINE")
-@file:JvmName("Extensions")
+@file:JvmName("LangExt")
 @file:JvmMultifileClass
 
 package pw.aru.utils.extensions.lang
 
-import ch.qos.logback.core.helpers.ThrowableToStringArray
-
-
-fun <E> List<E>.split(minSize: Int, maxSize: Int): List<List<E>> {
-    return when {
-        size < maxSize -> listOf(this)
-        else -> chunked((minSize..maxSize).minBy { it - size % it } ?: (minSize + maxSize) / 2)
-    }
-}
+import java.io.PrintWriter
+import java.io.StringWriter
 
 fun Throwable.simpleName(): String {
     var c: Class<*>? = javaClass
@@ -44,4 +37,6 @@ fun Throwable.especializationName(): String {
     return "Throwable"
 }
 
-fun Throwable.stackTraceToString() = ThrowableToStringArray.convert(this).joinToString("\n")
+fun Throwable.stackTraceToString(): String {
+    return StringWriter().also { printStackTrace(PrintWriter(it, true)) }.toString()
+}
