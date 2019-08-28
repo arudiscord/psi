@@ -1,67 +1,34 @@
 package pw.aru.psi.commands.manager
 
-import mu.KLogging
+import pw.aru.psi.commands.ICategory
 import pw.aru.psi.commands.ICommand
 
 class CommandRegistry {
-    interface Listener {
-        fun unnamedCommand(command: ICommand)
+    val commands = LinkedHashMap<String, ICommand>()
+    val categories = LinkedHashMap<String, ICategory>()
 
-        fun noHelpCommand(command: ICommand, names: List<String>)
-
-        fun multipleHelpCommand(command: ICommand, names: List<String>)
-    }
-
-    companion object : KLogging() {
-        private val helpInterfaces = listOf(
-            ICommand.HelpDialogProvider::class.java,
-            ICommand.HelpDialog::class.java
-        )
-
-        val NOOP_LISTENER = object : Listener {
-            override fun unnamedCommand(command: ICommand) = Unit
-
-            override fun noHelpCommand(command: ICommand, names: List<String>) = Unit
-
-            override fun multipleHelpCommand(command: ICommand, names: List<String>) = Unit
-        }
-    }
-
-    val commands: MutableMap<String, ICommand> = LinkedHashMap()
-    val lookup: MutableMap<ICommand, MutableList<String>> = LinkedHashMap()
-    var listener = NOOP_LISTENER
+    val commandLookup = LinkedHashMap<ICommand, MutableList<String>>()
+    val categoryNameLookup = LinkedHashMap<ICategory, String>()
+    val categoryCommandsLookup = LinkedHashMap<ICategory, MutableList<ICommand>>()
 
     operator fun get(key: String) = commands[key]
 
     operator fun set(vararg names: String, command: ICommand) {
-        register(names.toList(), command)
+        registerCommand(names.toList(), command)
     }
 
-    fun register(names: List<String>, command: ICommand) {
-        if (!sanityChecks(command, names)) return
-
+    fun registerCommand(names: List<String>, command: ICommand) {
         val keys = names.asSequence()
             .map(String::toLowerCase)
             .distinct()
             .onEach { commands[it] = command }
 
-        lookup.getOrPut(command, ::ArrayList).addAll(keys)
+        commandLookup.getOrPut(command, ::ArrayList).addAll(keys)
+        command.category?.let { categoryCommandsLookup.getOrPut(it, ::ArrayList).add(command) }
     }
 
-    private fun sanityChecks(command: ICommand, names: List<String>): Boolean {
-        if (names.isEmpty()) {
-            listener.unnamedCommand(command)
-            return false
-        }
-
-        val implemented = helpInterfaces.filter { it.isInstance(command) }
-
-        if (implemented.isEmpty()) {
-            listener.noHelpCommand(command, names)
-        } else if (implemented.size > 1) {
-            listener.multipleHelpCommand(command, names)
-        }
-
-        return true
+    fun registerCategory(value: String, category: ICategory) {
+        categories[value] = category
+        categoryNameLookup[category] = value
     }
 }

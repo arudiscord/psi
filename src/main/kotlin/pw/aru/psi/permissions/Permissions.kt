@@ -1,26 +1,28 @@
 package pw.aru.psi.permissions
 
 abstract class Permissions {
-    class Just(val p: Permission) : Permissions() {
-        override fun check(permission: Collection<Permission>) = permission.contains(p)
+    class Just(val perm: Permission) : Permissions() {
+        override fun check(permission: Collection<Permission>) = permission.contains(perm)
 
-        override fun toString() = "**${p.description}**"
+        override fun toString() = "**${perm.description}**"
     }
 
-    class AnyOf(vararg permission: Permission) : Permissions() {
-        val p = permission.toSet()
+    class AnyOf(permissions: Collection<Permission>) : Permissions() {
+        constructor(vararg permission: Permission) : this(permission.toSet())
+
+        val permSet = permissions.toSet()
 
         override fun check(permission: Collection<Permission>): Boolean {
-            return permission.any(p::contains)
+            return permission.any(permSet::contains)
         }
 
         override fun toString(): String {
-            return when (p.size) {
+            return when (permSet.size) {
                 0 -> "anything (empty)"
-                1 -> "**${p.first().description}**"
-                2 -> "**${p.first().description}** or **${p.last().description}**"
+                1 -> "**${permSet.first().description}**"
+                2 -> "**${permSet.first().description}** or **${permSet.last().description}**"
                 else -> {
-                    val list = p.mapTo(ArrayList()) { "**${it.description}**" }
+                    val list = permSet.mapTo(ArrayList()) { "**${it.description}**" }
                     val last = list.removeAt(list.lastIndex)
                     list.joinToString(", ", postfix = " or $last")
                 }
@@ -28,20 +30,22 @@ abstract class Permissions {
         }
     }
 
-    class AllOf(vararg permission: Permission) : Permissions() {
-        val p = permission.toSet()
+    class AllOf(permissions: Collection<Permission>) : Permissions() {
+        constructor(vararg permission: Permission) : this(permission.toSet())
+
+        val permSet = permissions.toSet()
 
         override fun check(permission: Collection<Permission>): Boolean {
-            return permission.containsAll(p)
+            return permission.containsAll(permSet)
         }
 
         override fun toString(): String {
-            return when (p.size) {
+            return when (permSet.size) {
                 0 -> "anything (empty)"
-                1 -> "**${p.first().description}**"
-                2 -> "**${p.first().description}** and **${p.last().description}**"
+                1 -> "**${permSet.first().description}**"
+                2 -> "**${permSet.first().description}** and **${permSet.last().description}**"
                 else -> {
-                    val list = p.mapTo(ArrayList()) { "**${it.description}**" }
+                    val list = permSet.mapTo(ArrayList()) { "**${it.description}**" }
                     val last = list.removeAt(list.lastIndex)
                     list.joinToString(", ", postfix = " and $last")
                 }
@@ -49,20 +53,22 @@ abstract class Permissions {
         }
     }
 
-    class AnyOfMulti(vararg permissions: Permissions) : Permissions() {
-        val p = permissions.toSet()
+    class AnyOfMulti(permissions: Collection<Permissions>) : Permissions() {
+        constructor(vararg permission: Permissions) : this(permission.toSet())
+
+        val permSet = permissions.toSet()
 
         override fun check(permission: Collection<Permission>): Boolean {
-            return p.any { it.check(permission) }
+            return permSet.any { it.check(permission) }
         }
 
         override fun toString(): String {
-            return when (p.size) {
+            return when (permSet.size) {
                 0 -> "anything (empty)"
-                1 -> p.first().toString()
-                2 -> "(${p.first()}) or (${p.last()})"
+                1 -> permSet.first().toString()
+                2 -> "(${permSet.first()}) or (${permSet.last()})"
                 else -> {
-                    val list = p.mapTo(ArrayList(), Permissions::toString)
+                    val list = permSet.mapTo(ArrayList(), Permissions::toString)
                     val last = list.removeAt(list.lastIndex)
                     list.joinToString(prefix = "(", separator = "), (", postfix = ") or ($last)")
                 }
@@ -71,20 +77,22 @@ abstract class Permissions {
     }
 
 
-    class AllOfMulti(vararg permissions: Permissions) : Permissions() {
-        val p = permissions.toSet()
+    class AllOfMulti(permissions: Collection<Permissions>) : Permissions() {
+        constructor(vararg permission: Permissions) : this(permission.toSet())
+
+        val permSet = permissions.toSet()
 
         override fun check(permission: Collection<Permission>): Boolean {
-            return p.all { it.check(permission) }
+            return permSet.all { it.check(permission) }
         }
 
         override fun toString(): String {
-            return when (p.size) {
+            return when (permSet.size) {
                 0 -> "anything (empty)"
-                1 -> p.first().toString()
-                2 -> "(${p.first()}) and (${p.last()})"
+                1 -> permSet.first().toString()
+                2 -> "(${permSet.first()}) and (${permSet.last()})"
                 else -> {
-                    val list = p.mapTo(ArrayList(), Permissions::toString)
+                    val list = permSet.mapTo(ArrayList(), Permissions::toString)
                     val last = list.removeAt(list.lastIndex)
                     list.joinToString(prefix = "(", separator = "), (", postfix = ") and ($last)")
                 }

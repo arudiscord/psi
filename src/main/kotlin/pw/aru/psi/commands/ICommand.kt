@@ -8,7 +8,7 @@ import pw.aru.psi.commands.context.CommandContext
 import pw.aru.psi.permissions.Permissions
 
 interface ICommand {
-    val category: Category?
+    val category: ICategory?
 
     fun CommandContext.call()
 

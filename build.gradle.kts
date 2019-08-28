@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "1.6.1"
+version = "1.7"
 
 //Repositories and Dependencies
 repositories {

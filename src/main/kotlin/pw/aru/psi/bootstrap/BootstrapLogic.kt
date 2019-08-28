@@ -78,12 +78,12 @@ class BootstrapLogic(
     private fun onFirstShardReady() {
         val commandBootstrap = CommandBootstrap(scanResult, kodein)
 
+        commandBootstrap.createCategories()
         commandBootstrap.createCommands()
         commandBootstrap.createProviders()
         commandBootstrap.createStandalones()
 
         scanResult.close()
-        commandBootstrap.reportResults()
     }
 
     private fun onAllShardsReady(shardCount: Int) {
