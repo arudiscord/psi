@@ -21,10 +21,11 @@ class BootstrapLogic(
     private val def: BotDef,
     private val log: BootstrapLogger,
     private val scanResult: ScanResult,
-    private val catnip: Catnip,
     private val kodein: Kodein
 ) {
     private val disposableRefs = ArrayList<Disposable>()
+
+    private val catnip: Catnip by kodein.instance()
 
     init {
         val shutdownManager: ShutdownManager by kodein.instance()

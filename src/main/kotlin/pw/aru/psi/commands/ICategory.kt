@@ -1,8 +1,6 @@
 package pw.aru.psi.commands
 
-import com.mewna.catnip.entity.message.Embed
-import com.mewna.catnip.entity.message.Message
-import pw.aru.psi.BotDef
+import pw.aru.psi.commands.help.HelpProvider
 import pw.aru.psi.permissions.Permissions
 
 /**
@@ -14,17 +12,12 @@ interface ICategory {
      */
     val categoryName: String
 
+    val permissions: Permissions
+        get() = Permissions.none
+
     val nsfw: Boolean
+        get() = false
 
-    interface Permission : ICategory {
-        val permissions: Permissions
-    }
-
-    interface HelpDialog : ICategory {
-        fun onHelp(def: BotDef, message: Message): Embed
-    }
-
-    interface HelpDialogProvider : ICategory {
-        val helpHandler: HelpDialog
-    }
+    val help: HelpProvider?
+        get() = this as? HelpProvider
 }

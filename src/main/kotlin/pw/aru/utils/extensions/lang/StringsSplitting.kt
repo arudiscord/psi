@@ -14,8 +14,6 @@ fun String.smartSplit(
         return sequenceOf(this)
     }
 
-    //val policy : Array<out SplitPolicy> = if (policy.isEmpty()) arrayOf<SplitPolicy>(SplitPolicy.ANYWHERE)
-
     val parts = LinkedList<String>()
 
     var currentBeginIndex = 0
@@ -60,7 +58,7 @@ interface SplitPolicy {
 
 internal object AnywhereSplitPolicy : SplitPolicy {
     override fun nextSplit(currentBeginIndex: Int, string: String, maxLength: Int): Int {
-        return Math.min(currentBeginIndex + maxLength, string.length)
+        return (currentBeginIndex + maxLength).coerceAtMost(string.length)
     }
 }
 

@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "1.7"
+version = "1.8"
 
 //Repositories and Dependencies
 repositories {
@@ -38,6 +38,8 @@ dependencies {
     // Logging
     compile("ch.qos.logback:logback-classic:1.2.3")
     compile("io.github.microutils:kotlin-logging:1.6.26")
+
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.5.1")
 }
 
 tasks.withType<KotlinCompile> {

@@ -6,6 +6,7 @@ import io.github.classgraph.ScanResult
 import org.kodein.di.DKodein
 import org.kodein.di.Kodein
 import org.kodein.di.generic.bind
+import org.kodein.di.generic.eagerSingleton
 import org.kodein.di.generic.instance
 import org.kodein.di.generic.singleton
 import pw.aru.libs.kodein.jit.installJit
@@ -25,18 +26,14 @@ class BootstrapCreator(private val def: BotDef) {
             .scan()
     }
 
-    fun catnip(): Catnip {
-        return Catnip.catnip(def.catnipOptions)
-    }
-
-    fun kodein(catnip: Catnip): Kodein {
+    fun kodein(): Kodein {
         return Kodein {
             installJit()
             bind<Kodein>() with singleton { kodein }
             bind<DKodein>() with singleton { dkodein }
 
             bind<BotDef>() with instance(def)
-            bind<Catnip>() with instance(catnip)
+            bind<Catnip>() with eagerSingleton { Catnip.catnip(def.catnipOptions) }
 
             bind<CommandRegistry>() with singleton { CommandRegistry() }
             bind<CommandProcessor>() with singleton { CommandProcessor(instance()) }

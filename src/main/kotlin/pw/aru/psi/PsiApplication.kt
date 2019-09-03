@@ -27,11 +27,10 @@ class PsiApplication(private val def: BotDef) {
 
         try {
             val scanResult = creator.scanResult()
-            val catnip = creator.catnip()
-            val kodein = creator.kodein(catnip)
+            val kodein = creator.kodein()
             shutdownManager = kodein.direct.instance()
 
-            BootstrapLogic(def, log, scanResult, catnip, kodein).launch()
+            BootstrapLogic(def, log, scanResult, kodein).launch()
         } catch (e: Exception) {
             log.failed(e)
             exitProcess(1)

@@ -19,13 +19,13 @@ fun <V> CompletionStage<V>.value(): V = stageToFuture().join()
 fun <V, T> T.value(): V where T : Future<V>, T : CompletionStage<V> = get()
 
 @JvmName("futureGetValue")
-operator fun <V> Future<V>.getValue(r: Any?, p: KProperty<*>): V = get()
+operator fun <V> Future<V>.getValue(r: Any?, p: KProperty<*>): V = value()
 
 @JvmName("completionGetValue")
-operator fun <V> CompletionStage<V>.getValue(r: Any?, p: KProperty<*>): V = stageToFuture().join()
+operator fun <V> CompletionStage<V>.getValue(r: Any?, p: KProperty<*>): V = value()
 
 @JvmName("futureCompletionGetValue")
-operator fun <V, T> T.getValue(r: Any?, p: KProperty<*>): V where T : Future<V>, T : CompletionStage<V> = get()
+operator fun <V, T> T.getValue(r: Any?, p: KProperty<*>): V where T : Future<V>, T : CompletionStage<V> = value()
 
 private fun <T> CompletionStage<T>.stageToFuture(): CompletableFuture<T> {
     return if (this is CompletableFuture<*>) {
@@ -35,16 +35,10 @@ private fun <T> CompletionStage<T>.stageToFuture(): CompletableFuture<T> {
     }
 }
 
-fun <T> Array<CompletionStage<T>>.awaitAll(): CompletionStage<Void> {
-    return CompletableFuture.allOf(
-        *map { it.stageToFuture() }
-            .toTypedArray()
-    )
+fun <T> Iterable<CompletionStage<T>>.awaitAll(): CompletionStage<Void> {
+    return CompletableFuture.allOf(*map { it.stageToFuture() }.toTypedArray())
 }
 
-fun <T> Collection<CompletionStage<T>>.awaitAll(): CompletionStage<Void> {
-    return CompletableFuture.allOf(
-        *map { it.stageToFuture() }
-            .toTypedArray()
-    )
+fun <T> Array<CompletionStage<T>>.awaitAll(): CompletionStage<Void> {
+    return CompletableFuture.allOf(*map { it.stageToFuture() }.toTypedArray())
 }

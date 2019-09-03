@@ -10,7 +10,6 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.generic.instance
 import pw.aru.psi.BotDef
-import pw.aru.psi.commands.ICategory
 import pw.aru.psi.commands.ICommand
 import pw.aru.psi.commands.ICommand.CustomHandler.Result.HANDLED
 import pw.aru.psi.commands.context.CommandContext
@@ -128,19 +127,13 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
 
     // overrideable behaviour
 
-    protected fun onCommandError(command: ICommand, message: Message, t: Throwable) {
+    protected open fun onCommandError(command: ICommand, message: Message, t: Throwable) {
         when {
             t == CommandContext.ShowHelp -> {
-                if (command is ICommand.HelpDialogProvider) {
-                    message.channel().sendMessage(command.helpHandler.onHelp(def, message))
+                command.help?.let {
+                    it.onHelp(def, message)
                     return
                 }
-
-                if (command is ICommand.HelpDialog) {
-                    message.channel().sendMessage(command.onHelp(def, message))
-                    return
-                }
-
                 handleException(command, message, t, null)
             }
 
@@ -159,14 +152,9 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
     }
 
     protected open fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>): Boolean {
-        val perms = Permissions.AllOfMulti(
-            listOfNotNull(
-                (command.category as? ICategory.Permission)?.permissions,
-                (command as? ICommand.Permission)?.permissions
-            )
-        )
+        val perms = Permissions.of(*listOfNotNull(command.category?.permissions, command.permissions).toTypedArray())
 
-        if (!perms.check(permissions)) {
+        if (!perms.test(permissions)) {
             notEnoughPerms(message, command, perms, permissions)
             return false
         }
@@ -204,5 +192,4 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
             override val description = "Override CommandProcessor#resolvePermissions to change this."
         }
     }
-
 }
