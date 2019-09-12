@@ -3,6 +3,7 @@ package pw.aru.psi.bootstrap
 import io.github.classgraph.ScanResult
 import mu.KLogging
 import org.kodein.di.Kodein
+import org.kodein.di.KodeinAware
 import org.kodein.di.generic.bind
 import org.kodein.di.generic.instance
 import pw.aru.libs.kodein.jit.jitInstance
@@ -14,18 +15,26 @@ import pw.aru.psi.executor.RunEvery
 import pw.aru.psi.executor.service.TaskExecutorService
 import pw.aru.utils.extensions.lang.allOf
 
-class CommandBootstrap(private val scanResult: ScanResult, private val kodein: Kodein) {
+class RegistryBootstrap(private val scanResult: ScanResult, override val kodein: Kodein) : KodeinAware {
     companion object : KLogging()
 
-    private val tasks: TaskExecutorService by kodein.instance()
-    private val registry: CommandRegistry by kodein.instance()
+    private val tasks: TaskExecutorService by instance()
+    private val registry: CommandRegistry by instance()
+    private val errorHandler: ErrorHandler by instance()
+
+    private val injectors by lazy {
+        scanResult.getClassesImplementing(IRegistryInjector::class.qualifiedName)
+            .filter { it.hasAnnotation(RegistryInjector::class.qualifiedName) }
+            .loadClasses(IRegistryInjector::class.java)
+            .groupBy { it.getAnnotation(RegistryInjector::class.java).value }
+    }
 
     fun createCategories() {
         scanResult.getClassesImplementing(ICategory::class.qualifiedName)
             .filter { it.hasAnnotation(Category::class.qualifiedName) }
             .loadClasses(ICategory::class.java)
             .forEach {
-                try {
+                runCatching {
                     val meta = it.getAnnotation(Category::class.java)
                     if (it.isEnum) {
                         for (category in it.enumConstants) {
@@ -39,9 +48,7 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
                         registry.registerCategory(meta.value, category)
                         processExecutable(category)
                     }
-                } catch (e: Exception) {
-                    logger.error(e) { "Error while registering $it" }
-                }
+                }.onFailure { t -> errorHandler.onCategoryCreation(it, t) }
             }
     }
 
@@ -50,38 +57,31 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
             .filter { it.hasAnnotation(Command::class.qualifiedName) }
             .loadClasses(ICommand::class.java)
             .forEach {
-                try {
+                runCatching {
                     // command metadata
                     val meta = it.getAnnotation(Command::class.java)
 
                     // injectable category
-                    val category = it.getAnnotation(Category::class.java)?.value?.let(registry.categories::get)
+                    val category = it.getAnnotation(Category::class.java)?.value?.let(registry::category)
 
                     val command = kodein.maybeInject(category).jitInstance(it)
                     registry.registerCommand(meta.value.toList(), command)
                     processExecutable(command)
-                } catch (e: Exception) {
-                    logger.error(e) { "Error while registering $it" }
-                }
+                }.onFailure { t -> errorHandler.onCommandCreation(it, t) }
             }
     }
 
-    fun createProviders() {
-        scanResult.getClassesImplementing(ICommandProvider::class.qualifiedName)
-            .filter { it.hasAnnotation(CommandProvider::class.qualifiedName) }
-            .loadClasses(ICommandProvider::class.java)
-            .forEach {
-                try {
-                    // injectable category
-                    val category = it.getAnnotation(Category::class.java)?.value?.let(registry.categories::get)
+    fun loadInjectors(phase: RegistryPhase) {
+        injectors[phase]?.forEach {
+            runCatching {
+                // injectable category
+                val category = it.getAnnotation(Category::class.java)?.value?.let(registry::category)
 
-                    val provider = kodein.maybeInject(category).jitInstance(it)
-                    provider.provide(registry)
-                    processExecutable(provider)
-                } catch (e: Exception) {
-                    logger.error(e) { "Error while registering commands through $it" }
-                }
-            }
+                val provider = kodein.maybeInject(category).jitInstance(it)
+                provider.inject(registry)
+                processExecutable(provider)
+            }.onFailure { t -> errorHandler.onRegistryInjectorCreation(it, phase, t) }
+        }
     }
 
     fun createStandalones() {
@@ -95,17 +95,15 @@ class CommandBootstrap(private val scanResult: ScanResult, private val kodein: K
                     arrayOf(
                         ICategory::class.qualifiedName,
                         ICommand::class.qualifiedName,
-                        ICommandProvider::class.qualifiedName
+                        IRegistryInjector::class.qualifiedName
                     ).none(it::implementsInterface)
                 )
             }
             .loadClasses(Executable::class.java)
             .forEach {
-                try {
+                runCatching {
                     processExecutable(kodein.jitInstance(it))
-                } catch (e: Exception) {
-                    logger.error(e) { "Error while executing $it" }
-                }
+                }.onFailure { t -> errorHandler.onExecutableCreation(it, t) }
             }
     }
 

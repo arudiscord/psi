@@ -25,7 +25,7 @@ repositories {
 dependencies {
     compile(kotlin("stdlib-jdk8"))
 
-    compile("com.mewna:catnip:f3aed18a24")
+    compile("com.mewna:catnip:9b31ccb0f8")
     compile("io.reactivex.rxjava2:rxkotlin:2.3.0")
     compile("io.github.classgraph:classgraph:4.8.43")
     compile("org.kodein.di:kodein-di-generic-jvm:6.1.0")

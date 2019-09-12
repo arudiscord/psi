@@ -8,6 +8,9 @@ import pw.aru.utils.Colors
 import pw.aru.utils.extensions.lang.multiline
 import pw.aru.utils.extensions.lang.plusAssign
 
+/**
+ * Webhook Logger for guild join/leaves.
+ */
 class GuildLogger(private val def: BotDef, url: String) : DiscordLogger(url) {
     fun onGuildJoin(guild: Guild) {
         embed {
