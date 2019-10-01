@@ -91,7 +91,7 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
         val args = Args(rawContent)
         val cmd = args.takeString().toLowerCase()
 
-        val command = registry[cmd]?.let { if (outer == null) it else it as? ICommand.Discrete }
+        val command = registry.command(cmd)?.let { if (outer == null) it else it as? ICommand.Discrete }
         val ctx = CommandContext(this, args, permissions)
 
         if (command != null) {
@@ -109,13 +109,13 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
         } else {
             if (outer == null) {
                 if (
-                    registry.commandLookup.keys.mapNotNull { it as? ICommand.CustomHandler }.any {
+                    registry.commands().mapNotNull { it as? ICommand.CustomHandler }.any {
                         it.runCatching { ctx.customCall(cmd) }.getOrNull() == HANDLED
                     }
                 ) return
             } else {
                 if (
-                    registry.commandLookup.keys.mapNotNull { it as? ICommand.CustomDiscreteHandler }.any {
+                    registry.commands().mapNotNull { it as? ICommand.CustomDiscreteHandler }.any {
                         it.runCatching { ctx.customCall(cmd, outer) }.getOrNull() == HANDLED
                     }
                 ) return

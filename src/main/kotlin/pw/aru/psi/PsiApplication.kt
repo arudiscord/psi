@@ -1,11 +1,13 @@
 package pw.aru.psi
 
-import org.kodein.di.direct
-import org.kodein.di.generic.instance
-import pw.aru.psi.bootstrap.BootstrapCreator
+import com.mewna.catnip.Catnip
+import com.mewna.catnip.extension.AbstractExtension
+import org.kodein.di.Kodein
+import org.kodein.di.KodeinAware
 import pw.aru.psi.bootstrap.BootstrapLogger
-import pw.aru.psi.bootstrap.BootstrapLogic
-import pw.aru.psi.bootstrap.ShutdownManager
+import pw.aru.psi.bootstrap.PsiBootstrap
+import pw.aru.utils.KodeinExtension
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.system.exitProcess
 
 /**
@@ -14,23 +16,19 @@ import kotlin.system.exitProcess
  * @constructor Creates a instance with the bot definition.
  * @param def the bot definition.
  */
-class PsiApplication(private val def: BotDef) {
-    private lateinit var shutdownManager: ShutdownManager
+class PsiApplication(private val def: BotDef) : AbstractExtension("psiApplication"), KodeinAware {
+    private val shutdownListeners = CopyOnWriteArrayList<() -> Unit>()
 
     /**
      * Starts the bot application.
      */
     fun init() {
         val log = BootstrapLogger(def)
-        val creator = BootstrapCreator(def)
         log.started()
 
         try {
-            val scanResult = creator.scanResult()
-            val kodein = creator.kodein()
-            shutdownManager = kodein.direct.instance()
-
-            BootstrapLogic(def, log, scanResult, kodein).launch()
+            val bootstrap = PsiBootstrap(this, def, log)
+            bootstrap.launch()
         } catch (e: Exception) {
             log.failed(e)
             exitProcess(1)
@@ -38,9 +36,31 @@ class PsiApplication(private val def: BotDef) {
     }
 
     /**
-     * Shutdowns a previously started bot application.
+     * Registers a shutdown hook.
+     *
+     * @param hook the shutdown hook
      */
-    fun shutdown() {
-        shutdownManager.shutdown()
+    fun registerShutdownHook(hook: () -> Unit) = apply {
+        shutdownListeners += hook
+    }
+
+    /**
+     * Shutdowns a previously started bot application.
+     *
+     * @return the errors that happened while shutting down.
+     */
+    fun shutdown(): List<Throwable> {
+        return shutdownListeners.mapNotNull { runCatching(it).exceptionOrNull() }
+    }
+
+    override fun catnip(): Catnip {
+        return checkNotNull(super.catnip()) { NOT_INIT }
+    }
+
+    override val kodein: Kodein
+        get() = checkNotNull(catnip().extension(KodeinExtension::class.java)) { NOT_INIT }.kodein
+
+    companion object {
+        const val NOT_INIT = "Application not initialized yet. Please call PsiApplication#init before"
     }
 }

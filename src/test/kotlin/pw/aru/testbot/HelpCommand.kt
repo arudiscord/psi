@@ -17,14 +17,12 @@ class HelpCommand(override val category: ICategory, override val kodein: Kodein)
     override fun CommandContext.call() {
         val registry: CommandRegistry by instance()
 
-        with(registry) {
-            sendEmbed {
-                categoryCommandsLookup.forEach { (key, value) ->
-                    field(
-                        categoryNameLookup[key] ?: "null",
-                        value.joinToString { "`${commandLookup[it]?.first()}`" }
-                    )
-                }
+        sendEmbed {
+            registry.categorizedCommands().forEach { (key, value) ->
+                field(
+                    registry.name(key) ?: "null",
+                    value.joinToString { "`${registry.names(it)?.first()}`" }
+                )
             }
         }
     }

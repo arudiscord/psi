@@ -2,6 +2,7 @@ package pw.aru.psi
 
 import com.mewna.catnip.CatnipOptions
 import org.kodein.di.Kodein
+import pw.aru.utils.Colors
 import java.awt.Color
 
 /**
@@ -47,25 +48,34 @@ interface BotDef {
     /**
      * Splashes to be randomly shown as the bot's presence.
      *
-     * Can be a empty.
+     * Can be a empty list.
      *
      * **Example**: `listOf("New commands!", "Plays music!")`
      */
-    val splashes: List<String>
+    val splashes: List<String> get() = emptyList()
+
+    /**
+     * The main command of the bot, meant to be shown at the splash.
+     *
+     * Can be null.
+     *
+     * **Example**: `"about"`
+     */
+    val mainCommandName: String? get() = "help"
 
     /**
      * Webhook to announce bot start-ups.
      *
      * Can be `null`, which disables the console messages.
      */
-    val consoleWebhook: String?
+    val consoleWebhook: String? get() = null
 
     /**
      * Webhook to announce server joins or leaves.
      *
      * Can be `null`, which disables the server messages.
      */
-    val serversWebhook: String?
+    val serversWebhook: String? get() = null
 
     /**
      * Main color of the bot.
@@ -74,7 +84,7 @@ interface BotDef {
      *
      * **Example**: [Colors.blurple][pw.aru.utils.Colors.blurple]
      */
-    val mainColor: Color
+    val mainColor: Color get() = Colors.blurple
 
     /**
      * Options used to create the [com.mewna.catnip.Catnip] instance.
@@ -92,9 +102,9 @@ interface BotDef {
      *
      * This is your entry point to override
      * [the default command processor][pw.aru.psi.commands.manager.CommandProcessor],
-     * [add a custom error handling][pw.aru.psi.bootstrap.CatnipErrorHandler],
+     * [add a custom error handling][pw.aru.psi.bootstrap.ErrorHandler],
      * [override the task executor][pw.aru.psi.executor.TaskExecutorService],
      * as well as adding extra objects which can be injected on commands.
      */
-    val kodeinModule: Kodein.Module?
+    val kodeinModule: Kodein.Module? get() = null
 }

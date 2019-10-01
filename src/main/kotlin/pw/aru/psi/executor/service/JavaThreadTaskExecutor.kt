@@ -5,7 +5,7 @@ import java.lang.Thread.currentThread
 import java.util.concurrent.*
 import java.util.function.Supplier
 
-class JavaThreadTaskExecutor(private val scheduler: ScheduledExecutorService) : TaskExecutorService {
+class JavaThreadTaskExecutor(private val service: ScheduledExecutorService) : TaskExecutorService, ScheduledExecutorService by service {
     companion object {
         val default by lazy {
             JavaThreadTaskExecutor(
@@ -16,6 +16,7 @@ class JavaThreadTaskExecutor(private val scheduler: ScheduledExecutorService) : 
             )
         }
     }
+
     override fun task(
         period: Long,
         unit: TimeUnit,
@@ -23,21 +24,21 @@ class JavaThreadTaskExecutor(private val scheduler: ScheduledExecutorService) : 
         name: String?,
         block: () -> Unit
     ): ScheduledFuture<*> {
-        return scheduler.scheduleAtFixedRate(task(block, name), initialDelay, period, unit)
+        return service.scheduleAtFixedRate(task(block, name), initialDelay, period, unit)
     }
 
     override fun queue(
         name: String?,
         block: () -> Unit
     ): CompletableFuture<*> {
-        return CompletableFuture.runAsync(task(block, name).asRunnable(), scheduler)
+        return CompletableFuture.runAsync(task(block, name).asRunnable(), service)
     }
 
     override fun <T> compute(
         name: String?,
         block: () -> T
     ): CompletableFuture<T> {
-        return CompletableFuture.supplyAsync(task(block, name).asSupplier(), scheduler)
+        return CompletableFuture.supplyAsync(task(block, name).asSupplier(), service)
     }
 
     override fun schedule(
@@ -46,7 +47,7 @@ class JavaThreadTaskExecutor(private val scheduler: ScheduledExecutorService) : 
         name: String?,
         block: () -> Unit
     ): ScheduledFuture<*> {
-        return scheduler.schedule(task(block, name), delay, unit)
+        return service.schedule(task(block, name), delay, unit)
     }
 
     private fun <T> task(task: () -> T, name: String?): () -> T {

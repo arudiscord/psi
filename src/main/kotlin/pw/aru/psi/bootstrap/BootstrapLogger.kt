@@ -14,6 +14,9 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.time.OffsetDateTime
 
+/**
+ * [PsiBootstrap] webhook logger.
+ */
 class BootstrapLogger(private val def: BotDef) {
     private companion object : KLogging()
 
@@ -38,14 +41,15 @@ class BootstrapLogger(private val def: BotDef) {
         }
     }
 
-    fun successful(shardCount: Int, commandCount: Int) {
-        logger.info { "Successful boot! $commandCount commands loaded." }
+    fun successful(shardCount: Int, categoryCount: Int, commandCount: Int) {
+        logger.info { "Successful boot! $categoryCount categories and $commandCount commands loaded." }
         log?.embed {
             author("${def.botName} - Successful boot")
             color(Colors.discordGreen)
 
             description(
                 "$shardCount shards loaded.",
+                "$categoryCount categories loaded,",
                 "$commandCount commands loaded."
             )
 
