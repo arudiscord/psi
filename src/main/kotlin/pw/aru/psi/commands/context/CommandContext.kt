@@ -11,7 +11,6 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.direct
 import org.kodein.di.generic.instance
-import org.slf4j.MDC
 import pw.aru.psi.BotDef
 import pw.aru.psi.parser.Args
 import pw.aru.psi.permissions.Permission
@@ -40,17 +39,6 @@ data class CommandContext(
 
     val self by lazy { ContextMember(catnip.selfUser()!!, guild.selfMember()) }
 
-    @Deprecated(
-        message = "Use CommandContext#args directly.",
-        replaceWith = ReplaceWith("args"),
-        level = DeprecationLevel.ERROR
-    )
-    fun parseable() = args
-
-    fun showHelp(): Unit = throw ShowHelp
-
-    fun <T> returnHelp(): T = throw ShowHelp
-
     fun sendEmbed(builder: EmbedBuilder = EmbedBuilder(), init: EmbedBuilder.() -> Unit) =
         channel.sendMessage(embed(builder, init))
 
@@ -62,14 +50,9 @@ data class CommandContext(
 
     fun send(message: Message) = channel.sendMessage(message)
 
-    fun <T, R> T.withMDC(vararg pairs: Pair<String, String>, block: T.() -> R) {
-        for ((k, v) in pairs) MDC.put(k, v)
-        try {
-            block()
-        } finally {
-            for ((k) in pairs) MDC.remove(k)
-        }
-    }
+    fun showHelp(): Unit = throw ShowHelp
+
+    fun <T> returnHelp(): T = throw ShowHelp
 
     object ShowHelp : RuntimeException()
 }
