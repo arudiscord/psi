@@ -12,7 +12,7 @@ import pw.aru.psi.commands.manager.CommandRegistry
 import pw.aru.utils.extensions.lib.field
 
 @Command("help")
-@Category("enum#helpful")
+@Category("info")
 class HelpCommand(override val category: ICategory, override val kodein: Kodein) : ICommand, KodeinAware {
     override fun CommandContext.call() {
         val registry: CommandRegistry by instance()
