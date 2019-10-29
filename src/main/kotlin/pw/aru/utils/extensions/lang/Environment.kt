@@ -27,6 +27,14 @@ object Environment : ReadOnlyProperty<Any?, String> {
         }
     }
 
+    fun orNull(): ReadOnlyProperty<Any?, String?> {
+        return object : ReadOnlyProperty<Any?, String?> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): String? {
+                return property.run { get(name) }
+            }
+        }
+    }
+
     /**
      * Gets the value of the specified environment variable, or
      * **null** if the environment property is not found.

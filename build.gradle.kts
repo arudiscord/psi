@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // Aru!DB
 plugins {
-    kotlin("jvm") version "1.3.41"
+    kotlin("jvm") version "1.3.50"
     maven
     `maven-publish`
     id("com.github.ben-manes.versions") version "0.21.0"
@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "1.8.1"
+version = "1.8.2"
 
 //Repositories and Dependencies
 repositories {
