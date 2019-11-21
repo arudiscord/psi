@@ -7,12 +7,12 @@ plugins {
     kotlin("jvm") version "1.3.50"
     maven
     `maven-publish`
-    id("com.github.ben-manes.versions") version "0.21.0"
+    id("com.github.ben-manes.versions") version "0.27.0"
     id("com.jfrog.bintray") version "1.8.4"
 }
 
 group = "pw.aru.psi"
-version = "1.8.3"
+version = "1.9"
 
 //Repositories and Dependencies
 repositories {
@@ -26,10 +26,11 @@ dependencies {
     compile(kotlin("stdlib-jdk8"))
 
     compile("com.mewna:catnip:9b31ccb0f8")
-    compile("io.reactivex.rxjava2:rxkotlin:2.3.0")
-    compile("io.github.classgraph:classgraph:4.8.43")
-    compile("org.kodein.di:kodein-di-generic-jvm:6.1.0")
+    compile("io.reactivex.rxjava2:rxkotlin:2.4.0")
+    compile("io.github.classgraph:classgraph:4.8.47")
+    compile("org.kodein.di:kodein-di-generic-jvm:6.4.1")
     compile("pw.aru.libs:kodein-jit-bindings:2.2")
+    compile("pw.aru.libs:eventpipes:1.4")
 
     // Open-Source Libraries
     compile("pw.aru.libs:catnip-entityfinder:1.0")
@@ -37,7 +38,7 @@ dependencies {
 
     // Logging
     compile("ch.qos.logback:logback-classic:1.2.3")
-    compile("io.github.microutils:kotlin-logging:1.6.26")
+    compile("io.github.microutils:kotlin-logging:1.7.6")
 
     testCompile("org.junit.jupiter:junit-jupiter-api:5.5.1")
 }

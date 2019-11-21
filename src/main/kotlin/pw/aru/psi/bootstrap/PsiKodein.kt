@@ -19,7 +19,7 @@ import pw.aru.psi.logging.DiscordLogger
 /**
  * The framework's [Kodein] configurator.
  */
-class PsiKodein(def: BotDef) : Kodein by Kodein(init = {
+class PsiKodein(def: BotDef) : Kodein by Kodein(allowSilentOverride = true, init = {
     installJit()
 
     bind<Kodein>() with singleton { kodein }

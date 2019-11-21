@@ -4,8 +4,8 @@ import com.mewna.catnip.Catnip
 import com.mewna.catnip.extension.AbstractExtension
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
-import pw.aru.psi.bootstrap.BootstrapLogger
-import pw.aru.psi.bootstrap.PsiBootstrap
+import pw.aru.libs.eventpipes.EventPipes
+import pw.aru.psi.bootstrap.*
 import pw.aru.utils.KodeinExtension
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.system.exitProcess
@@ -17,21 +17,37 @@ import kotlin.system.exitProcess
  * @param def the bot definition.
  */
 class PsiApplication(private val def: BotDef) : AbstractExtension("psiApplication"), KodeinAware {
-    private val shutdownListeners = CopyOnWriteArrayList<() -> Unit>()
+    private val events = EventPipes.newAsyncPipe<PsiApplicationEvent>()
 
     /**
      * Starts the bot application.
      */
     fun init() {
-        val log = BootstrapLogger(def)
-        log.started()
+        check(!init) { ALREADY_INIT }
+        init = true
+
+        events.publish(ApplicationStartedEvent(this))
 
         try {
-            val bootstrap = PsiBootstrap(this, def, log)
+            val bootstrap = PsiBootstrap(this, def, events)
             bootstrap.launch()
         } catch (e: Exception) {
-            log.failed(e)
-            exitProcess(1)
+            events.publish(FailedBootEvent(this, e))
+            if (exitIfError) {
+                exitProcess(1)
+            }
+        }
+    }
+
+    fun onEvents(block: (PsiApplicationEvent) -> Unit) = apply {
+        events.subscribe(block)
+    }
+
+    inline fun <reified T : PsiApplicationEvent> onEvent(crossinline block: (T) -> Unit) = apply {
+        onEvents {
+            if (it is T) {
+                block(it)
+            }
         }
     }
 
@@ -40,17 +56,21 @@ class PsiApplication(private val def: BotDef) : AbstractExtension("psiApplicatio
      *
      * @param hook the shutdown hook
      */
+    @Deprecated(message = "Replace with onEvents<BeforeShutdownEvent>")
     fun registerShutdownHook(hook: () -> Unit) = apply {
-        shutdownListeners += hook
+        events.subscribe {
+            if (it is BeforeShutdownEvent) hook()
+        }
     }
 
     /**
      * Shutdowns a previously started bot application.
-     *
-     * @return the errors that happened while shutting down.
      */
-    fun shutdown(): List<Throwable> {
-        return shutdownListeners.mapNotNull { runCatching(it).exceptionOrNull() }
+    fun shutdown() {
+        check(init) { NOT_INIT }
+        events.publish(BeforeShutdownEvent(this)).thenRunAsync {
+            events.publish(ShutdownEvent(this))
+        }
     }
 
     override fun catnip(): Catnip {
@@ -60,7 +80,14 @@ class PsiApplication(private val def: BotDef) : AbstractExtension("psiApplicatio
     override val kodein: Kodein
         get() = checkNotNull(catnip().extension(KodeinExtension::class.java)) { NOT_INIT }.kodein
 
+    private var init = false
+
+    private var exitIfError = true
+
+    fun dontExitIfError() = apply { exitIfError = true }
+
     companion object {
         const val NOT_INIT = "Application not initialized yet. Please call PsiApplication#init before"
+        const val ALREADY_INIT = "Application already initialized!"
     }
 }
