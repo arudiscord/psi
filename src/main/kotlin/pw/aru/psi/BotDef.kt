@@ -64,23 +64,9 @@ interface BotDef {
     val mainCommandName: String? get() = "help"
 
     /**
-     * Webhook to announce bot start-ups.
-     *
-     * Can be `null`, which disables the console messages.
-     */
-    val consoleWebhook: String? get() = null
-
-    /**
-     * Webhook to announce server joins or leaves.
-     *
-     * Can be `null`, which disables the server messages.
-     */
-    val serversWebhook: String? get() = null
-
-    /**
      * Main color of the bot.
      *
-     * Used to generate the [pw.aru.psi.commands.help.Help] dialogs.
+     * Used to generate the [pw.aru.psi.commands.help.HelpEmbed] dialogs.
      *
      * **Example**: [Colors.blurple][pw.aru.utils.Colors.blurple]
      */
@@ -103,7 +89,7 @@ interface BotDef {
      * This is your entry point to override
      * [the default command processor][pw.aru.psi.commands.manager.CommandProcessor],
      * [add a custom error handling][pw.aru.psi.bootstrap.ErrorHandler],
-     * [override the task executor][pw.aru.psi.executor.TaskExecutorService],
+     * [override the task executor][pw.aru.psi.executor.service.TaskExecutorService],
      * as well as adding extra objects which can be injected on commands.
      */
     val kodeinModule: Kodein.Module? get() = null

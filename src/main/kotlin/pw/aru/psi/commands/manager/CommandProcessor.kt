@@ -4,7 +4,7 @@ import com.mewna.catnip.entity.guild.Member
 import com.mewna.catnip.entity.message.Message
 import com.mewna.catnip.entity.util.Permission.ADMINISTRATOR
 import com.mewna.catnip.entity.util.Permission.SEND_MESSAGES
-import io.reactivex.functions.Consumer
+import io.reactivex.rxjava3.functions.Consumer
 import mu.KLogging
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
@@ -23,9 +23,9 @@ import java.util.*
 
 @Suppress("MemberVisibilityCanBePrivate", "UNUSED_PARAMETER")
 open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, KodeinAware {
-    protected val def: BotDef by instance()
-    protected val registry: CommandRegistry by instance()
-    protected val tasks: TaskExecutorService by instance()
+    protected val def by instance<BotDef>()
+    protected val registry by instance<CommandRegistry>()
+    protected val tasks by instance<TaskExecutorService>()
 
     var count: Long = 0
         private set

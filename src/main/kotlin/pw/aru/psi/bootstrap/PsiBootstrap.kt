@@ -6,9 +6,9 @@ import com.mewna.catnip.entity.user.Presence.OnlineStatus.ONLINE
 import com.mewna.catnip.shard.DiscordEvent
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
-import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Consumer
-import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.functions.Consumer
+import io.reactivex.rxjava3.kotlin.subscribeBy
 import org.kodein.di.KodeinAware
 import org.kodein.di.direct
 import org.kodein.di.generic.instance
@@ -45,7 +45,7 @@ class PsiBootstrap(
 
     private val disposableRefs = ArrayList<Disposable>()
 
-    private val catnip: Catnip by instance()
+    private val catnip by instance<Catnip>()
 
     init {
         app.registerShutdownHook { disposableRefs.forEach(Disposable::dispose) }
@@ -55,7 +55,7 @@ class PsiBootstrap(
     fun launch() {
         catnip.loadExtension(KodeinExtension(kodein)).loadExtension(app)
 
-        val errorHandler: ErrorHandler by instance()
+        val errorHandler by instance<ErrorHandler>()
 
         disposableRefs += catnip.observable(DiscordEvent.MESSAGE_CREATE)
             .subscribe(direct.instance<CommandProcessor>(), Consumer(errorHandler::onCommandProcessor))
@@ -77,20 +77,6 @@ class PsiBootstrap(
             },
             onError = errorHandler::onReady
         )
-
-        def.serversWebhook?.let {
-            val guildLogger = GuildLogger(def, it)
-
-            disposableRefs += catnip.observable(DiscordEvent.GUILD_CREATE).subscribeBy(
-                onNext = guildLogger::onGuildJoin,
-                onError = errorHandler::onGuildSubscriptions
-            )
-
-            disposableRefs += catnip.observable(DiscordEvent.GUILD_DELETE).subscribeBy(
-                onNext = guildLogger::onGuildLeave,
-                onError = errorHandler::onGuildSubscriptions
-            )
-        }
 
         catnip.connect()
     }

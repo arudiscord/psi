@@ -12,8 +12,6 @@ object TestBot : BotDef {
     override val basePackage = "pw.aru.testbot"
     override val prefixes = listOf("!")
     override val splashes = listOf("I love tests!")
-    override val consoleWebhook = System.getenv("webhook")
-    override val serversWebhook = System.getenv("webhook")
     override val mainColor = Colors.blurple
 
     override val catnipOptions = CatnipOptions(System.getenv("token"))

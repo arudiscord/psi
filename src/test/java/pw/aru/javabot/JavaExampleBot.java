@@ -52,18 +52,6 @@ public class JavaExampleBot implements BotDef {
         return null;
     }
 
-    @Nullable
-    @Override
-    public String getConsoleWebhook() {
-        return System.getenv("webhook");
-    }
-
-    @Nullable
-    @Override
-    public String getServersWebhook() {
-        return System.getenv("webhook");
-    }
-
     @NotNull
     @Override
     public Color getMainColor() {

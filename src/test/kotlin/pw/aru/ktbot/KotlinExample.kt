@@ -12,8 +12,6 @@ object KtBot : BotDef {
     override val basePackage = "pw.aru.ktbot"
     override val prefixes = listOf("!")
     override val splashes = listOf("Kotlin!")
-    override val consoleWebhook = System.getenv("webhook")
-    override val serversWebhook = System.getenv("webhook")
     override val mainColor = Colors.discordPurple
 
     override val catnipOptions = CatnipOptions(System.getenv("token"))

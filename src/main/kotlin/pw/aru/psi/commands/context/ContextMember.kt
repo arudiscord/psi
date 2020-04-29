@@ -4,7 +4,7 @@ import com.mewna.catnip.Catnip
 import com.mewna.catnip.entity.channel.DMChannel
 import com.mewna.catnip.entity.guild.Member
 import com.mewna.catnip.entity.user.User
-import io.reactivex.Single
+import io.reactivex.rxjava3.core.Single
 import java.util.*
 
 data class ContextMember(val user: User, val member: Member) : User by user, Member by member {

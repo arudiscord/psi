@@ -14,7 +14,6 @@ import pw.aru.psi.commands.manager.CommandRegistry
 import pw.aru.psi.commands.manager.CommandRegistryImpl
 import pw.aru.psi.executor.service.JavaThreadTaskExecutor
 import pw.aru.psi.executor.service.TaskExecutorService
-import pw.aru.psi.logging.DiscordLogger
 
 /**
  * The framework's [Kodein] configurator.
@@ -33,6 +32,5 @@ class PsiKodein(def: BotDef) : Kodein by Kodein(init = {
 
     bind<TaskExecutorService>() with singleton { JavaThreadTaskExecutor.default }
     bind<ErrorHandler>() with singleton { ErrorHandler.Default }
-    def.consoleWebhook?.let { bind<DiscordLogger>() with singleton { DiscordLogger(it) } }
     def.kodeinModule?.let { import(it, true) }
 })

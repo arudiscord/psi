@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // Aru!DB
 plugins {
-    kotlin("jvm") version "1.3.50"
+    kotlin("jvm") version "1.3.72"
     maven
     `maven-publish`
     id("com.github.ben-manes.versions") version "0.21.0"
@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "1.8.3"
+version = "2.0"
 
 //Repositories and Dependencies
 repositories {
@@ -25,10 +25,10 @@ repositories {
 dependencies {
     compile(kotlin("stdlib-jdk8"))
 
-    compile("com.mewna:catnip:9b31ccb0f8")
-    compile("io.reactivex.rxjava2:rxkotlin:2.3.0")
-    compile("io.github.classgraph:classgraph:4.8.43")
-    compile("org.kodein.di:kodein-di-generic-jvm:6.1.0")
+    compile("com.mewna:catnip:2.0.0")
+    compile("io.reactivex.rxjava3:rxkotlin:3.0.0")
+    compile("io.github.classgraph:classgraph:4.8.47")
+    compile("org.kodein.di:kodein-di-generic-jvm:6.5.5")
     compile("pw.aru.libs:kodein-jit-bindings:2.2")
 
     // Open-Source Libraries
@@ -37,9 +37,9 @@ dependencies {
 
     // Logging
     compile("ch.qos.logback:logback-classic:1.2.3")
-    compile("io.github.microutils:kotlin-logging:1.6.26")
+    compile("io.github.microutils:kotlin-logging:1.7.9")
 
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.5.1")
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.6.1")
 }
 
 tasks.withType<KotlinCompile> {
