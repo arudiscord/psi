@@ -1,11 +1,9 @@
 package pw.aru.psi.commands.manager
 
-import com.mewna.catnip.entity.guild.Member
-import com.mewna.catnip.entity.message.Message
-import com.mewna.catnip.entity.util.Permission.ADMINISTRATOR
-import com.mewna.catnip.entity.util.Permission.SEND_MESSAGES
-import io.reactivex.rxjava3.functions.Consumer
 import mu.KLogging
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.generic.instance
@@ -15,14 +13,14 @@ import pw.aru.psi.commands.ICommand.CustomHandler.Result.HANDLED
 import pw.aru.psi.commands.context.CommandContext
 import pw.aru.psi.executor.service.TaskExecutorService
 import pw.aru.psi.parser.Args
-import pw.aru.psi.permissions.Permission
-import pw.aru.psi.permissions.Permissions
 import pw.aru.utils.extensions.lang.anyOf
 import pw.aru.utils.extensions.lang.limit
+import pw.aru.utils.extensions.lib.discordTag
 import java.util.*
+import java.util.function.Consumer
 
 @Suppress("MemberVisibilityCanBePrivate", "UNUSED_PARAMETER")
-open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, KodeinAware {
+open class CommandProcessor(override val kodein: Kodein) : Consumer<MessageReceivedEvent>, KodeinAware {
     protected val def by instance<BotDef>()
     protected val registry by instance<CommandRegistry>()
     protected val tasks by instance<TaskExecutorService>()
@@ -30,22 +28,20 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
     var count: Long = 0
         private set
 
-    override fun accept(message: Message) {
-        val self = message.guild()?.selfMember() ?: return
+    override fun accept(event: MessageReceivedEvent) {
+        val message = event.message
 
-        if (!anyOf(
-                message.author().bot(),
-                !self.hasPermissions(message.channel().asGuildChannel(), SEND_MESSAGES),
-                !self.hasPermissions(ADMINISTRATOR)
-            )) return
+        val self = message.jda.selfUser
 
-        tasks.queue("Cmd:${message.author().discordTag()}:${message.content().limit(32)}") {
+        if (!anyOf(message.author.isBot, (message.channel as? TextChannel)?.canTalk() != false)) return
+
+        tasks.queue("Cmd:${message.author.discordTag}:${message.contentRaw.limit(32)}") {
             onMessage(message)
         }
     }
 
     private fun onMessage(message: Message) {
-        val raw = message.content()
+        val raw = message.contentRaw
 
         for (prefix in def.prefixes) {
             if (raw.startsWith(prefix)) {
@@ -85,19 +81,15 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
     private fun Message.nextCommand(rawContent: String, outer: String?) {
         if (!filterMessages(this)) return
 
-        val permissions = resolvePermissions(member()!!)
-        if (permissions.isEmpty()) return // blacklisted
-
         val args = Args(rawContent)
         val cmd = args.takeString().toLowerCase()
 
         val command = registry.command(cmd)?.let { if (outer == null) it else it as? ICommand.Discrete }
-        val ctx = CommandContext(this, args, permissions)
+        val ctx = CommandContext(this, kodein, args)
 
         if (command != null) {
-            if (!filterCommands(this, command, permissions)) return
-            beforeCommand(this, cmd, command, permissions)
-            logger.trace { "Executing: $cmd by ${author().discordTag()} at ${Date()}" }
+            beforeCommand(this, cmd, command)
+            logger.trace { "Executing: $cmd by ${author.discordTag} at ${Date()}" }
             count++
             if (outer == null) {
                 command.runCatching { ctx.call() }
@@ -121,7 +113,7 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
                 ) return
             }
 
-            customHandleCommands(this, cmd, args, outer, permissions)
+            customHandleCommands(this, cmd, args, outer)
         }
     }
 
@@ -151,32 +143,16 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
         }
     }
 
-    protected open fun filterCommands(message: Message, command: ICommand, permissions: Set<Permission>): Boolean {
-        val perms = Permissions.of(*listOfNotNull(command.category?.permissions, command.permissions).toTypedArray())
-
-        if (!perms.test(permissions)) {
-            notEnoughPerms(message, command, perms, permissions)
-            return false
-        }
-        return true
-    }
-
     // hooks
-
-    protected open fun notEnoughPerms(
-        message: Message, command: ICommand, requiredPermissions: Permissions, permissions: Set<Permission>
-    ) = Unit
 
     protected open fun customPrefixes(message: Message): List<String> = emptyList()
 
     protected open fun filterMessages(message: Message): Boolean = true
 
-    protected open fun resolvePermissions(member: Member): Set<Permission> = setOf(dummyPermission)
-
-    protected open fun beforeCommand(message: Message, cmd: String, command: ICommand, permissions: Set<Permission>) = Unit
+    protected open fun beforeCommand(message: Message, cmd: String, command: ICommand) = Unit
 
     protected open fun customHandleCommands(
-        message: Message, command: String, args: Args, outer: String?, permissions: Set<Permission>
+        message: Message, command: String, args: Args, outer: String?
     ) = Unit
 
     protected open fun handleException(command: ICommand, message: Message, throwable: Throwable, underlying: Throwable?) {
@@ -186,10 +162,5 @@ open class CommandProcessor(override val kodein: Kodein) : Consumer<Message>, Ko
 
     // extra stuff
 
-    private companion object : KLogging() {
-        val dummyPermission = object : Permission {
-            override val name = "Run Bot"
-            override val description = "Override CommandProcessor#resolvePermissions to change this."
-        }
-    }
+    private companion object : KLogging()
 }

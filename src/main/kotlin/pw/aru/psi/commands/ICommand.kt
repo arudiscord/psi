@@ -1,17 +1,13 @@
 package pw.aru.psi.commands
 
-import com.mewna.catnip.entity.message.Message
+import net.dv8tion.jda.api.entities.Message
 import pw.aru.psi.commands.ICommand.CustomHandler.Result
 import pw.aru.psi.commands.context.CommandContext
 import pw.aru.psi.commands.help.HelpProvider
-import pw.aru.psi.permissions.Permissions
 
 interface ICommand {
     val category: ICategory?
         get() = null
-
-    val permissions: Permissions
-        get() = Permissions.none
 
     val nsfw: Boolean
         get() = category?.nsfw ?: false

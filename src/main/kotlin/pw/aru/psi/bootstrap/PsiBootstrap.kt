@@ -1,122 +1,101 @@
 package pw.aru.psi.bootstrap
 
-import com.mewna.catnip.Catnip
-import com.mewna.catnip.entity.user.Presence.ActivityType.PLAYING
-import com.mewna.catnip.entity.user.Presence.OnlineStatus.ONLINE
-import com.mewna.catnip.shard.DiscordEvent
+import club.minnced.jda.reactor.ReactiveEventManager
+import club.minnced.jda.reactor.on
 import io.github.classgraph.ClassGraph
-import io.github.classgraph.ScanResult
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.functions.Consumer
-import io.reactivex.rxjava3.kotlin.subscribeBy
-import org.kodein.di.KodeinAware
+import net.dv8tion.jda.api.OnlineStatus
+import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.sharding.ShardManager
+import org.kodein.di.DKodein
+import org.kodein.di.Kodein
 import org.kodein.di.direct
+import org.kodein.di.generic.bind
 import org.kodein.di.generic.instance
+import org.kodein.di.generic.singleton
+import pw.aru.libs.kodein.jit.installJit
 import pw.aru.psi.BotDef
 import pw.aru.psi.PsiApplication
 import pw.aru.psi.commands.RegistryPhase
 import pw.aru.psi.commands.manager.CommandProcessor
 import pw.aru.psi.commands.manager.CommandRegistry
+import pw.aru.psi.commands.manager.CommandRegistryImpl
+import pw.aru.psi.executor.service.JavaThreadTaskExecutor
 import pw.aru.psi.executor.service.TaskExecutorService
 import pw.aru.psi.executor.service.asJavaExecutor
-import pw.aru.utils.KodeinExtension
 import pw.aru.utils.extensions.lang.getValue
+import reactor.core.Disposable
 import java.util.concurrent.TimeUnit
-import com.mewna.catnip.entity.user.Presence.Activity.of as activityOf
-import com.mewna.catnip.entity.user.Presence.of as presenceOf
-import java.lang.Runtime.getRuntime as runtime
+import java.util.function.Consumer
 
-/**
- * Class that bootstraps the framework components.
- */
-class PsiBootstrap(
-    private val app: PsiApplication,
-    private val def: BotDef,
-    private val log: BootstrapLogger
-) : KodeinAware {
-    override val kodein = PsiKodein(def)
+internal fun bootstrap(app: PsiApplication, def: BotDef, log: BootstrapLogger) {
+    val events = ReactiveEventManager()
+    val manager = def.builder.setEventManagerProvider { events }.build()
 
-    private val scanResult: ScanResult
-        by ClassGraph()
-            .enableClassInfo()
-            .enableAnnotationInfo()
-            .whitelistPackages("pw.aru", def.basePackage)
-            .scanAsync(direct.instance<TaskExecutorService>().asJavaExecutor(), runtime().availableProcessors())
+    // Build the Kodein as early as damn possible
+    val kodein = Kodein {
+        installJit()
 
-    private val disposableRefs = ArrayList<Disposable>()
+        bind<Kodein>() with singleton { kodein }
+        bind<DKodein>() with singleton { dkodein }
 
-    private val catnip by instance<Catnip>()
+        bind<BotDef>() with instance(def)
+        bind<PsiApplication>() with instance(app)
+        bind<ShardManager>() with instance(manager)
 
-    init {
-        app.registerShutdownHook { disposableRefs.forEach(Disposable::dispose) }
-        app.registerShutdownHook(catnip::shutdown)
+        bind<CommandRegistry>() with singleton { CommandRegistryImpl() }
+        bind<CommandProcessor>() with singleton { CommandProcessor(instance()) }
+
+        bind<TaskExecutorService>() with singleton { JavaThreadTaskExecutor.default }
+        bind<ErrorHandler>() with singleton { ErrorHandler.Default }
+        def.kodeinModule?.let { import(it, true) }
     }
 
-    fun launch() {
-        catnip.loadExtension(KodeinExtension(kodein)).loadExtension(app)
+    val executor by kodein.instance<TaskExecutorService>()
 
-        val errorHandler by instance<ErrorHandler>()
+    val scanResult by ClassGraph()
+        .enableClassInfo()
+        .enableAnnotationInfo()
+        .whitelistPackages("pw.aru", def.basePackage)
+        .scanAsync(executor.asJavaExecutor(), Runtime.getRuntime().availableProcessors())
 
-        disposableRefs += catnip.observable(DiscordEvent.MESSAGE_CREATE)
-            .subscribe(direct.instance<CommandProcessor>(), Consumer(errorHandler::onCommandProcessor))
+    val disposables = ArrayList<Disposable>()
+    app.registerShutdownHook { disposables.forEach { it.runCatching { dispose() } } }
 
-        val shardCount by lazy { catnip.gatewayInfo()!!.shards() }
-        var ready = 0
+    val errorHandler by kodein.instance<ErrorHandler>()
 
-        disposableRefs += catnip.observable(DiscordEvent.READY).subscribeBy(
-            onNext = {
-                if (ready == 0) {
-                    //queue("onFirstShardReady", onFirstShardReady)
-                    onFirstShardReady()
-                }
+    disposables += events.on<MessageReceivedEvent>()
+        .subscribe(kodein.direct.instance<CommandProcessor>(), Consumer(errorHandler::onCommandProcessor))
 
-                if (++ready == shardCount) {
-                    //queue("onAllShardsReady") { onAllShardsReady(shardCount) }
-                    onAllShardsReady(shardCount)
-                }
-            },
-            onError = errorHandler::onReady
-        )
-
-        catnip.connect()
+    with(RegistryBootstrap(scanResult, kodein)) {
+        loadInjectors(RegistryPhase.PRE_INITIALIZATION)
+        createCategories()
+        loadInjectors(RegistryPhase.AFTER_CATEGORIES)
+        createCommands()
+        loadInjectors(RegistryPhase.AFTER_COMMANDS)
+        createStandalones()
+        loadInjectors(RegistryPhase.AFTER_EXECUTABLES)
     }
 
-    private fun onFirstShardReady() {
-        with(RegistryBootstrap(scanResult, kodein)) {
-            loadInjectors(RegistryPhase.PRE_INITIALIZATION)
-            createCategories()
-            loadInjectors(RegistryPhase.AFTER_CATEGORIES)
-            createCommands()
-            loadInjectors(RegistryPhase.AFTER_COMMANDS)
-            createStandalones()
-            loadInjectors(RegistryPhase.AFTER_EXECUTABLES)
-        }
+    scanResult.close()
 
-        scanResult.close()
-    }
+    val splashes = def.splashes
+    val mainCommand = def.prefixes.firstOrNull()?.let { def.mainCommandName?.let { name -> "$it$name" } }
 
-    private fun onAllShardsReady(shardCount: Int) {
-        val splashes = def.splashes
-        val mainCommand = def.prefixes.firstOrNull()?.let { def.mainCommandName?.let { name -> "$it$name" } }
+    manager.shards.forEach { it.awaitReady() }
 
-        if (splashes.size > 1) {
-            val tasks by kodein.instance<TaskExecutorService>()
-            tasks.task(1, TimeUnit.MINUTES) {
-                presence(mainCommand, splashes.random())
+    executor.task(1, TimeUnit.MINUTES) {
+        val text = sequenceOf(mainCommand, splashes.random()).filterNotNull().joinToString(" | ")
+
+        if (text.isNotBlank()) {
+            val activity = Activity.playing(text)
+
+            for (jda in manager.shards.filter { it.status.isInit }) {
+                jda.presence.setPresence(OnlineStatus.ONLINE, activity)
             }
-        } else {
-            presence(mainCommand, splashes.firstOrNull())
-        }
-
-        val registry by kodein.instance<CommandRegistry>()
-        log.successful(shardCount, registry.categoryCount(), registry.commandCount())
-    }
-
-    private fun presence(vararg parts: String?) {
-        val text = parts.asSequence().filterNotNull().joinToString(" | ")
-
-        if (text.isNotEmpty()) {
-            catnip.presence(presenceOf(ONLINE, activityOf(text, PLAYING)))
         }
     }
+
+    val registry by kodein.instance<CommandRegistry>()
+    log.successful(manager.shardsTotal, registry.categoryCount(), registry.commandCount())
 }

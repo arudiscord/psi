@@ -4,7 +4,7 @@ import mu.KLogging
 import pw.aru.psi.BotDef
 
 /**
- * [PsiBootstrap] webhook logger.
+ * [PsiBootstrapYEET] webhook logger.
  */
 class BootstrapLogger(private val def: BotDef) {
     private companion object : KLogging()

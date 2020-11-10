@@ -1,6 +1,7 @@
 package pw.aru.javabot;
 
-import com.mewna.catnip.CatnipOptions;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.kodein.di.Kodein;
@@ -60,8 +61,8 @@ public class JavaExampleBot implements BotDef {
 
     @NotNull
     @Override
-    public CatnipOptions getCatnipOptions() {
-        return new CatnipOptions(System.getenv("token"));
+    public DefaultShardManagerBuilder getBuilder() {
+        return DefaultShardManagerBuilder.createLight(System.getenv("token"), GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES);
     }
 
     @Nullable

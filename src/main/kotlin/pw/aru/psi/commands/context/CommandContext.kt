@@ -1,54 +1,46 @@
 package pw.aru.psi.commands.context
 
-import com.mewna.catnip.Catnip
-import com.mewna.catnip.entity.builder.EmbedBuilder
-import com.mewna.catnip.entity.channel.TextChannel
-import com.mewna.catnip.entity.guild.Guild
-import com.mewna.catnip.entity.message.Embed
-import com.mewna.catnip.entity.message.Message
-import com.mewna.catnip.entity.message.MessageOptions
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.MessageEmbed
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.direct
 import org.kodein.di.generic.instance
 import pw.aru.psi.BotDef
 import pw.aru.psi.parser.Args
-import pw.aru.psi.permissions.Permission
 import pw.aru.utils.extensions.lib.embed
 import pw.aru.utils.extensions.lib.message
-import pw.aru.utils.kodein
 
 data class CommandContext(
     val message: Message,
-    val args: Args,
-    val permissions: Set<Permission>
+    override val kodein: Kodein,
+    val args: Args
 ) : KodeinAware {
-    val catnip: Catnip by lazy { message.catnip() }
-
-    override val kodein: Kodein by lazy { catnip.kodein().kodein }
+    val jda: JDA by lazy { message.jda }
 
     val def by lazy { direct.instance<BotDef>() }
 
-    val author by lazy { ContextMember(message.author(), message.member()!!) }
+    val author = message.author
 
-    val channel: TextChannel
-        get() = message.channel().asTextChannel()
+    val channel: MessageChannel
+        get() = message.channel
 
-    val guild: Guild
-        get() = message.guild()!!
-
-    val self by lazy { ContextMember(catnip.selfUser()!!, guild.selfMember()) }
+    val self by lazy { jda.selfUser }
 
     fun sendEmbed(builder: EmbedBuilder = EmbedBuilder(), init: EmbedBuilder.() -> Unit) =
-        channel.sendMessage(embed(builder, init))
+        channel.sendMessage(embed(builder, init)).submit()
 
-    fun sendMessage(init: MessageOptions.() -> Unit) = channel.sendMessage(message(init))
+    fun sendMessage(init: MessageBuilder.() -> Unit) = channel.sendMessage(message(init).build()).submit()
 
-    fun send(text: String) = channel.sendMessage(text)
+    fun send(text: String) = channel.sendMessage(text).submit()
 
-    fun send(embed: Embed) = channel.sendMessage(embed)
+    fun send(embed: MessageEmbed) = channel.sendMessage(embed).submit()
 
-    fun send(message: Message) = channel.sendMessage(message)
+    fun send(message: Message) = channel.sendMessage(message).submit()
 
     fun showHelp(): Unit = throw ShowHelp
 

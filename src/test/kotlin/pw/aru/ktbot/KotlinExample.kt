@@ -1,6 +1,7 @@
 package pw.aru.ktbot
 
-import com.mewna.catnip.CatnipOptions
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import org.kodein.di.Kodein
 import pw.aru.psi.BotDef
 import pw.aru.psi.PsiApplication
@@ -14,7 +15,9 @@ object KtBot : BotDef {
     override val splashes = listOf("Kotlin!")
     override val mainColor = Colors.discordPurple
 
-    override val catnipOptions = CatnipOptions(System.getenv("token"))
+    override val builder = DefaultShardManagerBuilder.createLight(
+        System.getenv("token"), GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES
+    )
     override val kodeinModule: Kodein.Module? = null
 }
 

@@ -1,9 +1,8 @@
 package pw.aru.psi.commands.help
 
-import com.mewna.catnip.entity.message.Message
+import net.dv8tion.jda.api.entities.Message
 import pw.aru.psi.BotDef
 import pw.aru.psi.commands.help.nodes.*
-import pw.aru.psi.permissions.Permissions
 import pw.aru.utils.extensions.lib.embed
 import pw.aru.utils.extensions.lib.field
 import java.awt.Color
@@ -14,17 +13,15 @@ class HelpEmbed(private val description: BaseDescription) : HelpProvider {
         fun command(
             names: List<String>,
             title: String,
-            permissions: Permissions? = null,
             color: Color? = null,
             thumbnail: String? = null
-        ) = HelpEmbed(CommandDescription(names, title, permissions, color, thumbnail))
+        ) = HelpEmbed(CommandDescription(names, title, color, thumbnail))
 
         fun category(
             title: String,
-            permissions: Permissions? = null,
             color: Color? = null,
             thumbnail: String? = null
-        ) = HelpEmbed(CategoryDescription(title, permissions, color, thumbnail))
+        ) = HelpEmbed(CategoryDescription(title, color, thumbnail))
     }
 
     private val nodes = LinkedList<HelpNode>()
@@ -40,22 +37,14 @@ class HelpEmbed(private val description: BaseDescription) : HelpProvider {
         }
         val title = description.title
         val color = description.color ?: def.mainColor
-        val permissions = description.permissions
         val thumbnail = description.thumbnail
 
         // begin embed
-        color(color)
-        thumbnail?.let(::thumbnail)
+        setColor(color)
+        thumbnail?.let(::setThumbnail)
 
-        author(title, null, message.catnip().selfUser()?.effectiveAvatarUrl())
-        footer(
-            "Requested by ${message.member()!!.effectiveName()}",
-            message.author().effectiveAvatarUrl()
-        )
-
-        if (permissions != null) {
-            field("Permissions Required:", permissions.toString().capitalize())
-        }
+        setAuthor(title, null, message.jda.selfUser.effectiveAvatarUrl)
+        setFooter("Requested by ${message.author.name}", message.author.effectiveAvatarUrl)
 
         if (names != null && names.size > 1) {
             field("Aliases:", names.asSequence().drop(1).joinToString("` `", "`", "`"))

@@ -1,13 +1,7 @@
 package pw.aru.psi.parser
 
-import com.mewna.catnip.entity.channel.Category
-import com.mewna.catnip.entity.channel.TextChannel
-import com.mewna.catnip.entity.channel.VoiceChannel
-import com.mewna.catnip.entity.guild.Guild
-import com.mewna.catnip.entity.guild.Member
-import com.mewna.catnip.entity.guild.Role
-import com.mewna.catnip.entity.misc.Emoji
-import pw.aru.libs.catnip.entityfinder.EntityFinder.*
+import com.jagrosh.jdautilities.commons.utils.FinderUtil.*
+import net.dv8tion.jda.api.entities.*
 
 fun Args.tryTakeMember(guild: Guild): Member? = mapNextString { findMembers(it, guild).singleOrNull().toMapResult() }
 
@@ -23,13 +17,13 @@ fun Args.takeRole(guild: Guild): Role = tryTakeRole(guild)
 
 fun Args.takeAllRoles(guild: Guild): List<Role> = generateSequence { tryTakeRole(guild) }.toList()
 
-fun Args.tryTakeEmoji(guild: Guild): Emoji? =
-    mapNextString { findEmojis(it, guild).singleOrNull().toMapResult() }
+fun Args.tryTakeEmoji(guild: Guild): Emote? =
+    mapNextString { findEmotes(it, guild).singleOrNull().toMapResult() }
 
-fun Args.takeEmoji(guild: Guild): Emoji =
+fun Args.takeEmoji(guild: Guild): Emote =
     tryTakeEmoji(guild) ?: throw IllegalStateException("argument is not a valid Emoji")
 
-fun Args.takeAllEmojis(guild: Guild): List<Emoji> = generateSequence { tryTakeEmoji(guild) }.toList()
+fun Args.takeAllEmojis(guild: Guild): List<Emote> = generateSequence { tryTakeEmoji(guild) }.toList()
 
 fun Args.tryTakeTextChannel(guild: Guild): TextChannel? =
     mapNextString { findTextChannels(it, guild).singleOrNull().toMapResult() }
