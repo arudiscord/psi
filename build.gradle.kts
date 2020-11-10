@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "pw.aru.psi"
-version = "3.0"
+version = "3.0.0"
 
 //Repositories and Dependencies
 repositories {
@@ -23,26 +23,26 @@ repositories {
 }
 
 dependencies {
-    compile(kotlin("stdlib-jdk8"))
-    compile("net.dv8tion:JDA:4.2.0_214") {
+    implementation(kotlin("stdlib-jdk8"))
+    api("net.dv8tion:JDA:4.2.0_214") {
         exclude(module = "opus-java")
     }
-    implementation("club.minnced:jda-reactor:1.2.0")
-    compile("io.projectreactor.kotlin:reactor-kotlin-extensions:1.1.0")
-    compile ("com.jagrosh:jda-utilities-commons:3.0.5")
-    compile("io.github.classgraph:classgraph:4.8.47")
-    compile("org.kodein.di:kodein-di-generic-jvm:6.5.5")
-    compile("pw.aru.libs:kodein-jit-bindings:2.2")
+    api("club.minnced:jda-reactor:1.2.0")
+    api("io.projectreactor.kotlin:reactor-kotlin-extensions:1.1.0")
+    api("com.jagrosh:jda-utilities-commons:3.0.5")
+    implementation("io.github.classgraph:classgraph:4.8.47")
+    api("org.kodein.di:kodein-di-generic-jvm:6.5.5")
+    api("pw.aru.libs:kodein-jit-bindings:2.2")
 
     // Open-Source Libraries
-    compile("pw.aru.libs:resources:1.0")
-    compile ("com.grack:nanojson:1.6")
+    api("pw.aru.libs:resources:1.0")
+    api("com.grack:nanojson:1.6")
 
     // Logging
-    compile("ch.qos.logback:logback-classic:1.2.3")
-    compile("io.github.microutils:kotlin-logging:1.7.9")
+    api("ch.qos.logback:logback-classic:1.2.3")
+    api("io.github.microutils:kotlin-logging:1.7.9")
 
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.6.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.1")
 }
 
 tasks.withType<KotlinCompile> {
